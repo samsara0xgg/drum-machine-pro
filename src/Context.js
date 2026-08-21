@@ -2,9 +2,13 @@ import React, { useState } from "react";
 
 const Context = React.createContext();
 
+const audioCtx = new AudioContext();
+const masterGain = audioCtx.createGain();
+masterGain.connect(audioCtx.destination);
+
 const ContextProvider = ({ children }) => {
   const ULTIMATE_ARRAY = [...Array(12)].map((ele) =>
-    [...Array(6)].map((ele) => Array(20).fill(false))
+    [...Array(6)].map((ele) => Array(21).fill(false))
   );
 
   const [UltimateClipControl, setUltimateClipControl] =
@@ -26,6 +30,7 @@ const ContextProvider = ({ children }) => {
   ]);
 
   const [started, setStarted] = useState(false);
+  const [loadedList, setLoadedList] = useState([]);
 
   return (
     <Context.Provider
@@ -37,6 +42,10 @@ const ContextProvider = ({ children }) => {
         setPatternList,
         started,
         setStarted,
+        audioCtx,
+        masterGain,
+        loadedList,
+        setLoadedList,
       }}
     >
       {children}

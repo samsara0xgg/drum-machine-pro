@@ -7,6 +7,7 @@ import {
   SortableElement,
   arrayMove,
 } from "react-sortable-hoc";
+import Channel707 from "../service/707";
 
 import { Context } from "../Context";
 
@@ -14,8 +15,37 @@ const Board = (props) => {
   const [, updateState] = useState();
   const forceUpdate = React.useCallback(() => updateState({}), []);
 
-  const { patternNum, clipState, setClipState, lastChange, setLastChange } =
-    useContext(Context);
+  const {
+    audioCtx,
+    patternNum,
+    clipState,
+    setClipState,
+    setLoadedList,
+  } = useContext(Context);
+  // Loading the file: fetch the audio file and decode the data
+  async function getFile(audioContext, filepath) {
+    const response = await fetch(filepath);
+    const arrayBuffer = await response.arrayBuffer();
+    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+    return audioBuffer;
+  }
+  async function setupSample(url) {
+    const filePath = url;
+    // Here we're waiting for the load of the file
+    // To be able to use this keyword we need to be within an `async` function
+    const sample = await getFile(audioCtx, filePath);
+
+    return sample;
+  }
+
+  useEffect(() => {
+    // Load every kit sample once, keeping channel order
+    Promise.all(
+      Channel707.channels.map((channel) => setupSample(channel.sample))
+    ).then((samples) => {
+      setLoadedList(samples);
+    });
+  }, []);
 
   const deleteChannel = (track) => {
     const changedClipState = clipState.slice();
@@ -24,6 +54,10 @@ const Board = (props) => {
   };
 
   const addChannel = () => {
+    // No more channels than the kit has samples
+    if (clipState[patternNum].length >= Channel707.channels.length) {
+      return;
+    }
     const changedClipState = clipState.slice();
     changedClipState[patternNum].push(Array(18).fill(false));
 
@@ -32,10 +66,12 @@ const Board = (props) => {
 
   const handleClipChange = (track, step) => {
     const changedClipState = clipState.slice();
+
     changedClipState[patternNum][track][step] =
       !changedClipState[patternNum][track][step];
-    setClipState(changedClipState);
-    setLastChange([track, step]);
+
+    setClipState((a) => changedClipState);
+    // setLastChange([track, step]);
   };
 
   //Use  react-sortable-hoc to make channels sortable:

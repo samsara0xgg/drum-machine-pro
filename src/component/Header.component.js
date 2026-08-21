@@ -73,8 +73,8 @@ const Header = (props) => {
             <Menu />
           </IconButton>
           <Box sx={{ mr: 1, flexGrow: 1, display: "flex" }}>
-            <Slider label="volume" id="1" />
-            <Slider label="BPM" id="2" />
+            <Slider label="volume" id="1" defaultValue="80" />
+            <Slider label="BPM" id="BPM" min="40" max="200" defaultValue="120" />
           </Box>
           <StyledButton sx={{ boxShadow: 3 }} startIcon={<Save />}>
             Save
