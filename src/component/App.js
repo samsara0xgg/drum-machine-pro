@@ -11,7 +11,7 @@ import {
   StyledEngineProvider,
 } from "@mui/material/styles";
 import { ContextProvider } from "../Context";
-import { Box, Card, Container, Grid, Paper, styled } from "@mui/material";
+import { Grid, Paper, styled } from "@mui/material";
 import { AspectRatio } from "@mui/icons-material";
 
 const theme = createTheme({
@@ -22,7 +22,7 @@ const theme = createTheme({
     },
     background: {
       default: "#abcdef",
-      paper: "#121212",
+      paper: "#1A1B26",
     },
   },
 });
@@ -52,28 +52,19 @@ const App = () => {
     const appBox = appBoxRef.current;
     const maxWidth = appBox.clientWidth;
     const maxHeight = appBox.clientHeight;
-    window.addEventListener(
-      "resize",
-      () => {
-        let scale,
-          width = window.innerWidth - 16,
-          isMax = width >= maxWidth;
-        console.log(
-          isMax,
+    const onResize = () => {
+      let scale,
+        width = window.innerWidth - 16,
+        isMax = width >= maxWidth;
+      scale = width / maxWidth;
 
-          appBox.clientWidth,
-          appBox.clientHeight,
-          appBox.clientHeight / appBox.clientWidth
-        );
-        scale = width / maxWidth;
-
-        appBox.style.transform = isMax ? "" : "scale(" + scale + ")";
-        pageBox.style.width = isMax ? "" : maxWidth * scale;
-        pageBox.style.height = isMax ? "" : maxHeight * scale;
-      },
-      []
-    );
-  });
+      appBox.style.transform = isMax ? "" : "scale(" + scale + ")";
+      pageBox.style.width = isMax ? "" : maxWidth * scale;
+      pageBox.style.height = isMax ? "" : maxHeight * scale;
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
 
   // window.addEventListener(
   //   "resize",

@@ -156,11 +156,14 @@ body {
     height: 54px;
 
     &__id {
+      @include fontdp(0.87);
       display: inline-block;
       width: 120px;
-      height: 50px;
-      @include fontdp(0.87);
       font-size: 14px;
+      height: 50px;
+      vertical-align: top;
+      line-height: 30px;
+      margin: 10px auto 10px 10px;
     }
     &__info {
       display: inline-block;
@@ -177,7 +180,6 @@ body {
     }
     &__stateicon {
       display: inline-block;
-
       height: 50px;
     }
 

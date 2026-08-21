@@ -24,7 +24,13 @@ const Slider = props => {
   return (
     <div style={{marginRight:"2vw"}}>
         <div className="sliderLabel">{props.label}</div>
-        <input type="range" id={`range${props.id}`} min="1" max="100"/>
+        <input
+          type="range"
+          id={`range${props.id}`}
+          min={props.min || "1"}
+          max={props.max || "100"}
+          defaultValue={props.defaultValue}
+        />
     </div>
   )
 }

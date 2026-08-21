@@ -44,7 +44,7 @@ const ControlPanel = (props) => {
   const [controlData] = useState(KNOB_INFO);
 
   const knobPanel = controlData.map((_, index) => (
-    <Grid item xs={6}>
+    <Grid key={`knobPanel${index}`} item xs={6}>
       <KnobContainer>
         <Knob info={controlData[index]} />
       </KnobContainer>

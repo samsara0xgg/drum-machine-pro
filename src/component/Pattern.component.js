@@ -13,9 +13,8 @@ const Pattern = (props) => {
   };
 
   const createItem = patternList.map((item, i) => (
-    <Grid item xs={2}>
+    <Grid key={`pattern${i}`} item xs={2}>
       <Item
-        key={`pattern${i}`}
         index={i + 1}
         checked={item}
         handleOptionChange={handleOptionChange}

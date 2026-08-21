@@ -1,9 +1,10 @@
-import React, { useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { SortableHandle } from "react-sortable-hoc";
-
+import Channel707 from "../../service/707";
+import loadAndBufferAudio from "../../service/audio";
+import { Context } from "../../Context";
 const Channel = (props) => {
   const { clipState, handleClipChange, track, deleteChannel } = props;
-
   const Draghandle = SortableHandle(() => (
     <svg
       t="1598071646386"
@@ -27,8 +28,15 @@ const Channel = (props) => {
     return (
       <div className="Board-Channel__info">
         <Draghandle />
-        <div className="Board-Channel__id">{clipState[18]}</div>
-
+        <div className="Board-Channel__id">{Channel707.channels[track].id}</div>
+        {/* <button
+          onClick={() => {
+            clipState[19].play();
+          }}
+          id={`channel${track}`}
+        >
+          {track}
+        </button> */}
         <span className="Board-Channel__stateicon">
           <input
             checked={clipState[16]}
@@ -49,8 +57,8 @@ const Channel = (props) => {
 
   const createChannelItem = () => {
     const channelList = clipState
-      .filter((clip, i) => i < 16)
-      .map((clip, i) => {
+      .filter((_, i) => i < 16)
+      .map((_, i) => {
         return (
           <input
             key={`clip${i}`}
@@ -86,6 +94,10 @@ const Channel = (props) => {
       </svg>
     );
   };
+
+  useEffect(() => {
+    console.log(1);
+  }, []);
 
   return (
     <li>
