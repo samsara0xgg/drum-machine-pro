@@ -2,7 +2,7 @@ import React, { useState } from "react";
 
 const Context = React.createContext();
 
-const audioCtx = new AudioContext();
+const audioCtx = new AudioContext(); //Web Audio API 
 const masterGain = audioCtx.createGain();
 masterGain.connect(audioCtx.destination);
 
