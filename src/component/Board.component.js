@@ -1,20 +1,18 @@
-import React, { useState, useContext, useEffect } from "react";
+import React, { useContext, useEffect } from "react";
 import TopBar from "./Board/TopBar.component";
 import Channel from "./Board/Channel.component";
 import AddChannel from "./Board/AddChannel.component";
+import { DndContext, closestCenter } from "@dnd-kit/core";
 import {
-  SortableContainer,
-  SortableElement,
+  SortableContext,
+  verticalListSortingStrategy,
   arrayMove,
-} from "react-sortable-hoc";
+} from "@dnd-kit/sortable";
 import Channel707 from "../service/707";
 
 import { Context } from "../Context";
 
 const Board = (props) => {
-  const [, updateState] = useState();
-  const forceUpdate = React.useCallback(() => updateState({}), []);
-
   const {
     audioCtx,
     patternNum,
@@ -71,41 +69,49 @@ const Board = (props) => {
       !changedClipState[patternNum][track][step];
 
     setClipState((a) => changedClipState);
-    // setLastChange([track, step]);
   };
 
-  //Use  react-sortable-hoc to make channels sortable:
-  const SortableItem = SortableElement(Channel);
+  // dnd-kit needs a stable id per sortable row; rows are positional
+  const channelIds = clipState[patternNum].map((_, i) => `channel-${i}`);
 
-  const ChannelContainer = SortableContainer(() => {
-    return (
-      <ul>
-        {clipState[patternNum].map((elem, index) => (
-          <SortableItem
-            key={`item${index}`}
-            track={index}
-            clipState={clipState[patternNum][index]}
-            handleClipChange={handleClipChange}
-            index={index}
-            deleteChannel={deleteChannel}
-          />
-        ))}
-      </ul>
+  const onDragEnd = ({ active, over }) => {
+    if (!over || active.id === over.id) {
+      return;
+    }
+    const oldIndex = channelIds.indexOf(active.id);
+    const newIndex = channelIds.indexOf(over.id);
+    const changedClipState = clipState.slice();
+    changedClipState[patternNum] = arrayMove(
+      changedClipState[patternNum],
+      oldIndex,
+      newIndex
     );
-  });
-
-  const onSortEnd = ({ oldIndex, newIndex }) => {
-    const changedPattern = arrayMove(clipState[patternNum], oldIndex, newIndex);
-    clipState[patternNum] = changedPattern;
-    setClipState(clipState);
-    forceUpdate();
+    setClipState(changedClipState);
   };
 
   return (
     <div className="Board">
       <TopBar />
       <div id="scroll">
-        <ChannelContainer onSortEnd={onSortEnd} useDragHandle />
+        <DndContext collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+          <SortableContext
+            items={channelIds}
+            strategy={verticalListSortingStrategy}
+          >
+            <ul>
+              {clipState[patternNum].map((elem, index) => (
+                <Channel
+                  key={`item${index}`}
+                  id={`channel-${index}`}
+                  track={index}
+                  clipState={clipState[patternNum][index]}
+                  handleClipChange={handleClipChange}
+                  deleteChannel={deleteChannel}
+                />
+              ))}
+            </ul>
+          </SortableContext>
+        </DndContext>
         <AddChannel addChannel={addChannel} />
       </div>
     </div>

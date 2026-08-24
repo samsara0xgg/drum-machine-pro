@@ -1,12 +1,26 @@
 import React, { useState, useEffect, useContext } from "react";
-import { SortableHandle } from "react-sortable-hoc";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import Channel707 from "../../service/707";
 import loadAndBufferAudio from "../../service/audio";
 import { Context } from "../../Context";
 const Channel = (props) => {
-  const { clipState, handleClipChange, track, deleteChannel } = props;
-  const Draghandle = SortableHandle(() => (
+  const { clipState, handleClipChange, track, deleteChannel, id } = props;
+
+  // dnd-kit: makes this row sortable; listeners go on the drag handle only
+  const { attributes, listeners, setNodeRef, transform, transition } =
+    useSortable({ id });
+
+  const sortableStyle = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  const Draghandle = () => (
     <svg
+      {...attributes}
+      {...listeners}
+      style={{ touchAction: "none" }}
       t="1598071646386"
       className="Board-Channel__dragicon"
       viewBox="0 0 1024 1024"
@@ -22,7 +36,7 @@ const Channel = (props) => {
         fill="#1a1a1a"
       ></path>
     </svg>
-  ));
+  );
 
   const createChannelInfo = () => {
     return (
@@ -100,7 +114,7 @@ const Channel = (props) => {
   }, []);
 
   return (
-    <li>
+    <li ref={setNodeRef} style={sortableStyle}>
       <div className="Board-Channel">
         {createChannelInfo()}
         <div className="Board-Channel__group">{createChannelItem()}</div>
