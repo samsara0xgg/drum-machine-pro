@@ -81,10 +81,13 @@ export const DEFAULT_KIT = "707";
 export const CHANNEL_LIMIT = 20;
 export const STEP_COUNT = 16;
 
-// Factory for one board row: which sound it plays + its own step pattern
+// Factory for one board row: which sound it plays + its own step pattern.
+// newUid is also used when hydrating a shared snapshot: uids from someone
+// else's session would collide with this counter, so loaded rows get fresh ones.
 let uid = 0;
+export const newUid = () => `ch-${++uid}`;
 export const newChannel = (kit, slot) => ({
-  uid: `ch-${++uid}`,
+  uid: newUid(),
   kit,
   slot,
   steps: Array(STEP_COUNT).fill(false),

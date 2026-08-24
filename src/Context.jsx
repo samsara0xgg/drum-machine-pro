@@ -1,5 +1,6 @@
-import React, { useRef, useState } from "react";
-import { DEFAULT_KIT, KITS, newChannel } from "./service/kits";
+import React, { useEffect, useRef, useState } from "react";
+import { DEFAULT_KIT, KITS, newChannel, newUid } from "./service/kits";
+import { loadPattern } from "./service/api";
 
 const Context = React.createContext();
 
@@ -55,6 +56,42 @@ const ContextProvider = ({ children }) => {
       )
     );
   };
+
+  // Replace the whole machine state with a shared snapshot. Fields are picked
+  // explicitly (junk dropped), and every row gets a fresh uid — uids minted in
+  // the sharer's session would collide with this session's counter.
+  const hydrate = (payload) => {
+    if (!payload || payload.version !== 1) return false;
+    setPatterns(
+      payload.patterns.map((pattern) => ({
+        kit: pattern.kit,
+        channels: pattern.channels.map((c) => ({
+          uid: newUid(),
+          kit: c.kit,
+          slot: c.slot,
+          steps: c.steps,
+          muted: c.muted,
+          solo: c.solo,
+        })),
+      }))
+    );
+    setPatternNum(payload.patternNum);
+    setBpm(payload.bpm);
+    return true;
+  };
+
+  // Visiting a share link (/p/:slug) loads that snapshot on boot; any failure
+  // (unknown slug, server down) falls back silently to the default machine.
+  useEffect(() => {
+    const match = window.location.pathname.match(/^\/p\/([2-9A-Za-z]{8})$/);
+    if (!match) return;
+    loadPattern(match[1])
+      .then((payload) => {
+        if (!hydrate(payload)) window.history.replaceState(null, "", "/");
+      })
+      .catch(() => window.history.replaceState(null, "", "/"));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Decoded AudioBuffers, keyed by sample URL. A ref because loading a sample
   // should not re-render the app; consumers read it at play time.
