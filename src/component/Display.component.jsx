@@ -1,18 +1,6 @@
-import { Box, Typography } from "@mui/material";
-import { styled } from "@mui/material/styles";
 import React, { useContext, useEffect, useRef } from "react";
 import { Context } from "../Context";
 import { KITS, sampleDef } from "../service/kits";
-
-const Screen = styled(Box)({
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  fontSize: "20px",
-  flexDirection: "column",
-  height: "100%",
-  backgroundColor: "#000000",
-});
 
 const Display = () => {
   const {
@@ -125,17 +113,19 @@ const Display = () => {
   }, [started, audioCtx, fxIn, buffersRef, setCurrentStep, nextStepRef]);
 
   return (
-    <Screen>
-      <Typography variant="caption" color="initial">
-        Drum Machine Pro
-      </Typography>
-      <Typography variant="body1" color="initial">
-        {KITS[currentKit].name} · suggested {KITS[currentKit].suggestedBpm} BPM
-      </Typography>
-      <button className="Display-enter" onClick={() => setStarted(!started)}>
-        {started ? "started" : "paused"}
+    <div className="Screen">
+      <span className="Screen-brand">DRUM MACHINE PRO</span>
+      <span className="Screen-info">
+        {KITS[currentKit].name} · <b>{bpm} BPM</b> · Pattern {patternNum + 1}
+      </span>
+      <button
+        className="Screen-play"
+        onClick={() => setStarted(!started)}
+        title={started ? "Pause" : "Play"}
+      >
+        {started ? "❚❚" : "▶︎"}
       </button>
-    </Screen>
+    </div>
   );
 };
 export default Display;

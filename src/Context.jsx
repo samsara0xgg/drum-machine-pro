@@ -38,19 +38,33 @@ wetGain.connect(masterGain);
 
 const PATTERN_COUNT = 12;
 const DEFAULT_CHANNEL_COUNT = 6;
+const LIBRARY_KEY = "drum-machine-library";
+
+// Read the saved library, dropping anything that isn't a usable entry.
+const readLibrary = () => {
+  try {
+    const list = JSON.parse(localStorage.getItem(LIBRARY_KEY));
+    if (!Array.isArray(list)) return [];
+    return list.filter((m) => m && m.payload && Array.isArray(m.payload.patterns));
+  } catch {
+    return [];
+  }
+};
+
+// The blank machine: 12 patterns on the default kit with 6 default rows each.
+const defaultPatterns = () =>
+  [...Array(PATTERN_COUNT)].map(() => ({
+    kit: DEFAULT_KIT,
+    channels: [...Array(DEFAULT_CHANNEL_COUNT)].map((_, slot) =>
+      newChannel(DEFAULT_KIT, slot)
+    ),
+  }));
 
 const ContextProvider = ({ children }) => {
   // 12 independent patterns; each owns its kit and its channel rows:
   // { kit, channels: [{ uid, kit, slot, steps, muted, solo }] }
   // (rows carry their own kit too, so cross-kit mixing per row is allowed)
-  const [patterns, setPatterns] = useState(() =>
-    [...Array(PATTERN_COUNT)].map(() => ({
-      kit: DEFAULT_KIT,
-      channels: [...Array(DEFAULT_CHANNEL_COUNT)].map((_, slot) =>
-        newChannel(DEFAULT_KIT, slot)
-      ),
-    }))
-  );
+  const [patterns, setPatterns] = useState(defaultPatterns);
 
   const [patternNum, setPatternNum] = useState(0);
   // Step the playhead is on right now (-1 = stopped); driven by the audio
@@ -82,6 +96,7 @@ const ContextProvider = ({ children }) => {
   // re-point at the new kit's sound in the same slot, so the drawn groove
   // survives with new flavor. Rows deliberately borrowed from another kit
   // keep their sound. Other patterns keep their own kits untouched.
+  // The tempo follows the kit's suggested BPM.
   const switchKit = (kitId) => {
     setPatterns((prev) =>
       prev.map((pattern, i) =>
@@ -101,6 +116,98 @@ const ContextProvider = ({ children }) => {
           : pattern
       )
     );
+    setBpm(KITS[kitId].suggestedBpm);
+  };
+
+  // ---- Library: named machine snapshots kept in localStorage ----
+  const [library, setLibrary] = useState(readLibrary);
+  // Which of "my patterns" is currently loaded (enables the UPDATE button).
+  const [loadedId, setLoadedId] = useState(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+
+  // Bottom toast message; a fresh object each time so the timer restarts.
+  const [notice, setNotice] = useState(null);
+  const toast = (msg) => setNotice({ msg });
+
+  // Keep the library mirrored in localStorage; storage may be blocked or full.
+  useEffect(() => {
+    try {
+      localStorage.setItem(LIBRARY_KEY, JSON.stringify(library));
+    } catch {}
+  }, [library]);
+
+  // Another tab saved the library: adopt its version instead of clobbering it.
+  useEffect(() => {
+    const onStorage = (e) => {
+      if (e.key === LIBRARY_KEY) setLibrary(readLibrary());
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
+
+  // The machine state that library entries and share links both capture.
+  const snapshot = () => ({
+    version: 1,
+    bpm,
+    pitch,
+    pan,
+    reverb,
+    patternNum,
+    patterns,
+  });
+
+  const saveToLibrary = (name) => {
+    const entry = { id: Date.now(), name, savedAt: Date.now(), payload: snapshot() };
+    setLibrary([...library, entry]);
+    setLoadedId(entry.id);
+    toast(<>Saved to Library: <b>{name}</b></>);
+  };
+
+  // Overwrite the loaded entry with the machine as it sounds now.
+  const updateLibrary = () => {
+    const entry = library.find((m) => m.id === loadedId);
+    if (!entry) return;
+    setLibrary(
+      library.map((m) =>
+        m.id === loadedId ? { ...m, savedAt: Date.now(), payload: snapshot() } : m
+      )
+    );
+    toast(<>Updated <b>{entry.name}</b></>);
+  };
+
+  const deleteEntry = (id) => {
+    const entry = library.find((m) => m.id === id);
+    if (!entry) return;
+    setLibrary(library.filter((m) => m.id !== id));
+    if (loadedId === id) setLoadedId(null);
+    toast(<>Deleted <b>{entry.name}</b></>);
+  };
+
+  const loadEntry = (id) => {
+    const entry = library.find((m) => m.id === id);
+    if (!entry || !hydrate(entry.payload)) return;
+    setLoadedId(id);
+    toast(<>Loaded <b>{entry.name}</b></>);
+  };
+
+  // Presets are built-in, so they never enable UPDATE.
+  const loadPreset = (preset) => {
+    if (!hydrate(preset.payload)) return;
+    setLoadedId(null);
+    toast(<>Loaded preset <b>{preset.name}</b></>);
+  };
+
+  // NEW: back to the blank default machine.
+  const newMachine = () => {
+    setPatterns(defaultPatterns());
+    setPatternNum(0);
+    setBpm(120);
+    setPitch(0);
+    setPan(0);
+    setReverb(0);
+    setLoadedId(null);
+    toast("Reset to a blank machine");
   };
 
   // Jump the transport to a step (DAW ruler-click "locate"). While playing the
@@ -186,6 +293,20 @@ const ContextProvider = ({ children }) => {
         audioCtx,
         masterGain,
         buffersRef,
+        library,
+        loadedId,
+        drawerOpen,
+        setDrawerOpen,
+        saveDialogOpen,
+        setSaveDialogOpen,
+        saveToLibrary,
+        updateLibrary,
+        deleteEntry,
+        loadEntry,
+        loadPreset,
+        newMachine,
+        notice,
+        toast,
       }}
     >
       {children}
