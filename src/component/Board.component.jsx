@@ -8,71 +8,68 @@ import {
   verticalListSortingStrategy,
   arrayMove,
 } from "@dnd-kit/sortable";
-import Channel707 from "../service/707";
-
+import {
+  KITS,
+  CHANNEL_LIMIT,
+  newChannel,
+  loadKitBuffers,
+} from "../service/kits";
 import { Context } from "../Context";
 
-const Board = (props) => {
+const Board = () => {
   const {
     audioCtx,
+    patterns,
+    setPatterns,
     patternNum,
-    clipState,
-    setClipState,
-    setLoadedList,
+    currentKit,
+    buffersRef,
   } = useContext(Context);
-  // Loading the file: fetch the audio file and decode the data
-  async function getFile(audioContext, filepath) {
-    const response = await fetch(filepath);
-    const arrayBuffer = await response.arrayBuffer();
-    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-    return audioBuffer;
-  }
-  async function setupSample(url) {
-    const filePath = url;
-    // Here we're waiting for the load of the file
-    // To be able to use this keyword we need to be within an `async` function
-    const sample = await getFile(audioCtx, filePath);
 
-    return sample;
-  }
+  const channels = patterns[patternNum];
 
+  // Load (fetch + decode) the current kit's samples; cached ones are skipped
   useEffect(() => {
-    // Load every kit sample once, keeping channel order
-    Promise.all(
-      Channel707.channels.map((channel) => setupSample(channel.sample))
-    ).then((samples) => {
-      setLoadedList(samples);
-    });
-  }, []);
+    loadKitBuffers(audioCtx, currentKit, buffersRef.current);
+  }, [audioCtx, currentKit, buffersRef]);
 
-  const deleteChannel = (track) => {
-    const changedClipState = clipState.slice();
-    changedClipState[patternNum].splice(track, 1);
-    setClipState(changedClipState);
+  // Rebuild only the current pattern, immutably; other patterns are reused as-is
+  const updateChannels = (fn) => {
+    setPatterns((prev) =>
+      prev.map((pattern, i) => (i === patternNum ? fn(pattern) : pattern))
+    );
   };
 
   const addChannel = () => {
-    // No more channels than the kit has samples
-    if (clipState[patternNum].length >= Channel707.channels.length) {
+    if (channels.length >= CHANNEL_LIMIT) {
       return;
     }
-    const changedClipState = clipState.slice();
-    changedClipState[patternNum].push(Array(18).fill(false));
-
-    setClipState(changedClipState);
+    // Cycle through the kit's samples so every new row starts with a sound
+    const slot = channels.length % KITS[currentKit].channels.length;
+    updateChannels((pattern) => [...pattern, newChannel(currentKit, slot)]);
   };
 
-  const handleClipChange = (track, step) => {
-    const changedClipState = clipState.slice();
-
-    changedClipState[patternNum][track][step] =
-      !changedClipState[patternNum][track][step];
-
-    setClipState((a) => changedClipState);
+  const deleteChannel = (uid) => {
+    updateChannels((pattern) => pattern.filter((c) => c.uid !== uid));
   };
 
-  // dnd-kit needs a stable id per sortable row; rows are positional
-  const channelIds = clipState[patternNum].map((_, i) => `channel-${i}`);
+  const toggleStep = (uid, step) => {
+    updateChannels((pattern) =>
+      pattern.map((c) =>
+        c.uid === uid
+          ? { ...c, steps: c.steps.map((on, i) => (i === step ? !on : on)) }
+          : c
+      )
+    );
+  };
+
+  const toggleFlag = (uid, flag) => {
+    updateChannels((pattern) =>
+      pattern.map((c) => (c.uid === uid ? { ...c, [flag]: !c[flag] } : c))
+    );
+  };
+
+  const channelIds = channels.map((c) => c.uid);
 
   const onDragEnd = ({ active, over }) => {
     if (!over || active.id === over.id) {
@@ -80,13 +77,7 @@ const Board = (props) => {
     }
     const oldIndex = channelIds.indexOf(active.id);
     const newIndex = channelIds.indexOf(over.id);
-    const changedClipState = clipState.slice();
-    changedClipState[patternNum] = arrayMove(
-      changedClipState[patternNum],
-      oldIndex,
-      newIndex
-    );
-    setClipState(changedClipState);
+    updateChannels((pattern) => arrayMove(pattern, oldIndex, newIndex));
   };
 
   return (
@@ -99,13 +90,12 @@ const Board = (props) => {
             strategy={verticalListSortingStrategy}
           >
             <ul>
-              {clipState[patternNum].map((elem, index) => (
+              {channels.map((channel) => (
                 <Channel
-                  key={`item${index}`}
-                  id={`channel-${index}`}
-                  track={index}
-                  clipState={clipState[patternNum][index]}
-                  handleClipChange={handleClipChange}
+                  key={channel.uid}
+                  channel={channel}
+                  toggleStep={toggleStep}
+                  toggleFlag={toggleFlag}
                   deleteChannel={deleteChannel}
                 />
               ))}

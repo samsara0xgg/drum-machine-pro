@@ -1,18 +1,16 @@
-import React, { useState } from "react";
+import React from "react";
 
-const Slider = (props) => {
-  const [value, setValue] = useState(props.defaultValue);
-
+// Fully controlled: the value lives in Context, this just renders it
+const Slider = ({ label, min, max, value, onChange }) => {
   return (
     <div style={{ marginRight: "2vw" }}>
-      <div className="sliderLabel">{props.label}</div>
+      <div className="sliderLabel">{label}</div>
       <input
         type="range"
-        id={`range${props.id}`}
-        min={props.min || "1"}
-        max={props.max || "100"}
+        min={min || "1"}
+        max={max || "100"}
         value={value}
-        onChange={(e) => setValue(e.target.value)}
+        onChange={(e) => onChange(Number(e.target.value))}
       />
     </div>
   );

@@ -4,19 +4,17 @@ import { Context } from "../Context";
 import { Card, Grid, Typography } from "@mui/material";
 
 const Pattern = (props) => {
-  const { patternList, setPatternList } = useContext(Context);
+  const { patterns, patternNum, setPatternNum } = useContext(Context);
 
   const handleOptionChange = (e) => {
-    const changedList = patternList.slice().fill(false);
-    changedList[e.target.value - 1] = !changedList[e.target.value - 1];
-    setPatternList(changedList);
+    setPatternNum(Number(e.target.value) - 1);
   };
 
-  const createItem = patternList.map((item, i) => (
+  const createItem = patterns.map((_, i) => (
     <Grid key={`pattern${i}`} item xs={2}>
       <Item
         index={i + 1}
-        checked={item}
+        checked={patternNum === i}
         handleOptionChange={handleOptionChange}
       />
     </Grid>
