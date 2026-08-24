@@ -95,14 +95,17 @@ export const newChannel = (kit, slot) => ({
 // Look up the sample definition (label / URL / gain) a channel points at
 export const sampleDef = (channel) => KITS[channel.kit].channels[channel.slot];
 
+// Fetch + decode one sample into the shared cache (no-op if already cached)
+export async function loadSample(audioCtx, sample, cache) {
+  if (cache.has(sample)) return;
+  const response = await fetch(sample);
+  const arrayBuffer = await response.arrayBuffer();
+  cache.set(sample, await audioCtx.decodeAudioData(arrayBuffer));
+}
+
 // Fetch + decode every sample of a kit once into the shared cache
 export async function loadKitBuffers(audioCtx, kitId, cache) {
   await Promise.all(
-    KITS[kitId].channels.map(async ({ sample }) => {
-      if (cache.has(sample)) return;
-      const response = await fetch(sample);
-      const arrayBuffer = await response.arrayBuffer();
-      cache.set(sample, await audioCtx.decodeAudioData(arrayBuffer));
-    })
+    KITS[kitId].channels.map(({ sample }) => loadSample(audioCtx, sample, cache))
   );
 }

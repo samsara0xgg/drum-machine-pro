@@ -1,9 +1,15 @@
 import React from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { sampleDef } from "../../service/kits";
+import { KITS } from "../../service/kits";
 
-const Channel = ({ channel, toggleStep, toggleFlag, deleteChannel }) => {
+const Channel = ({
+  channel,
+  toggleStep,
+  toggleFlag,
+  deleteChannel,
+  setSample,
+}) => {
   const { uid, steps, muted, solo } = channel;
 
   // dnd-kit: makes this row sortable; listeners go on the drag handle only
@@ -38,18 +44,37 @@ const Channel = ({ channel, toggleStep, toggleFlag, deleteChannel }) => {
     return (
       <div className="Board-Channel__info">
         <Draghandle />
-        <div className="Board-Channel__id">{sampleDef(channel).id}</div>
+        <select
+          className="Board-Channel__id"
+          value={`${channel.kit}:${channel.slot}`}
+          onChange={(e) => {
+            const [kit, slot] = e.target.value.split(":");
+            setSample(uid, kit, Number(slot));
+          }}
+        >
+          {Object.entries(KITS).map(([kitId, kit]) => (
+            <optgroup key={kitId} label={kit.name}>
+              {kit.channels.map((def, i) => (
+                <option key={def.sample} value={`${kitId}:${i}`}>
+                  {def.id}
+                </option>
+              ))}
+            </optgroup>
+          ))}
+        </select>
         <span className="Board-Channel__stateicon">
           <input
             checked={muted}
             onChange={() => toggleFlag(uid, "muted")}
             type="checkbox"
+            className="Board-Channel__mute"
             title="Mute"
           />
           <input
             checked={solo}
             onChange={() => toggleFlag(uid, "solo")}
             type="checkbox"
+            className="Board-Channel__solo"
             title="Solo"
           />
         </span>

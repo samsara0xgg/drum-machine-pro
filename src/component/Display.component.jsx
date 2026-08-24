@@ -2,7 +2,7 @@ import { Box, Typography } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import React, { useContext, useEffect, useRef } from "react";
 import { Context } from "../Context";
-import { sampleDef } from "../service/kits";
+import { KITS, sampleDef } from "../service/kits";
 
 const Screen = styled(Box)({
   display: "flex",
@@ -25,14 +25,15 @@ const Display = () => {
     patternNum,
     bpm,
     volume,
+    currentKit,
   } = useContext(Context);
 
   // Refs mirror the latest state so the running scheduler reads fresh values
   // (edits and BPM changes are picked up mid-playback) without restarting.
-  const channelsRef = useRef(patterns[patternNum]);
+  const channelsRef = useRef(patterns[patternNum].channels);
   const bpmRef = useRef(bpm);
   useEffect(() => {
-    channelsRef.current = patterns[patternNum];
+    channelsRef.current = patterns[patternNum].channels;
     bpmRef.current = bpm;
   });
 
@@ -96,8 +97,11 @@ const Display = () => {
 
   return (
     <Screen>
-      <Typography variant="body1" color="initial">
+      <Typography variant="caption" color="initial">
         Drum Machine Pro
+      </Typography>
+      <Typography variant="body1" color="initial">
+        {KITS[currentKit].name} · suggested {KITS[currentKit].suggestedBpm} BPM
       </Typography>
       <button className="Display-enter" onClick={() => setStarted(!started)}>
         {started ? "started" : "paused"}

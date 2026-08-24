@@ -1,16 +1,14 @@
-import * as React from "react";
+import React, { useContext } from "react";
 import Box from "@mui/material/Box";
 import InputLabel from "@mui/material/InputLabel";
 import MenuItem from "@mui/material/MenuItem";
 import FormControl from "@mui/material/FormControl";
 import Select from "@mui/material/Select";
+import { KITS } from "../../service/kits";
+import { Context } from "../../Context";
 
 export default function SelectBox(props) {
-  const [kit, setKit] = React.useState("707");
-
-  const handleChange = (event) => {
-    setKit(event.target.value);
-  };
+  const { currentKit, switchKit } = useContext(Context);
 
   return (
     <Box sx={{ minWidth: 120 }}>
@@ -19,11 +17,15 @@ export default function SelectBox(props) {
         <Select
           labelId="kit-select-label"
           id="kit-select"
-          value={kit}
+          value={currentKit}
           label={props.label}
-          onChange={handleChange}
+          onChange={(e) => switchKit(e.target.value)}
         >
-          <MenuItem value={"707"}>Roland TR-707</MenuItem>
+          {Object.entries(KITS).map(([kitId, kit]) => (
+            <MenuItem key={kitId} value={kitId}>
+              {kit.name} · {kit.suggestedBpm} BPM
+            </MenuItem>
+          ))}
         </Select>
       </FormControl>
     </Box>

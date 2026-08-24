@@ -9,10 +9,11 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable";
 import {
-  KITS,
   CHANNEL_LIMIT,
   newChannel,
   loadKitBuffers,
+  loadSample,
+  sampleDef,
 } from "../service/kits";
 import { Context } from "../Context";
 
@@ -26,36 +27,50 @@ const Board = () => {
     buffersRef,
   } = useContext(Context);
 
-  const channels = patterns[patternNum];
+  const channels = patterns[patternNum].channels;
 
-  // Load (fetch + decode) the current kit's samples; cached ones are skipped
+  // Preload the current pattern's kit so its palette responds instantly
   useEffect(() => {
     loadKitBuffers(audioCtx, currentKit, buffersRef.current);
   }, [audioCtx, currentKit, buffersRef]);
 
-  // Rebuild only the current pattern, immutably; other patterns are reused as-is
+  // Whatever samples the rows reference (cross-kit picks included) get loaded
+  useEffect(() => {
+    channels.forEach((channel) =>
+      loadSample(audioCtx, sampleDef(channel).sample, buffersRef.current)
+    );
+  }, [channels, audioCtx, buffersRef]);
+
+  // Rebuild only the current pattern's rows, immutably; everything else is reused
   const updateChannels = (fn) => {
     setPatterns((prev) =>
-      prev.map((pattern, i) => (i === patternNum ? fn(pattern) : pattern))
+      prev.map((pattern, i) =>
+        i === patternNum ? { ...pattern, channels: fn(pattern.channels) } : pattern
+      )
     );
   };
 
-  const addChannel = () => {
+  // kit + slot are picked by the user from the AddChannel menu
+  const addChannel = (kit, slot) => {
     if (channels.length >= CHANNEL_LIMIT) {
       return;
     }
-    // Cycle through the kit's samples so every new row starts with a sound
-    const slot = channels.length % KITS[currentKit].channels.length;
-    updateChannels((pattern) => [...pattern, newChannel(currentKit, slot)]);
+    updateChannels((rows) => [...rows, newChannel(kit, slot)]);
+  };
+
+  const setChannelSample = (uid, kit, slot) => {
+    updateChannels((rows) =>
+      rows.map((c) => (c.uid === uid ? { ...c, kit, slot } : c))
+    );
   };
 
   const deleteChannel = (uid) => {
-    updateChannels((pattern) => pattern.filter((c) => c.uid !== uid));
+    updateChannels((rows) => rows.filter((c) => c.uid !== uid));
   };
 
   const toggleStep = (uid, step) => {
-    updateChannels((pattern) =>
-      pattern.map((c) =>
+    updateChannels((rows) =>
+      rows.map((c) =>
         c.uid === uid
           ? { ...c, steps: c.steps.map((on, i) => (i === step ? !on : on)) }
           : c
@@ -64,8 +79,8 @@ const Board = () => {
   };
 
   const toggleFlag = (uid, flag) => {
-    updateChannels((pattern) =>
-      pattern.map((c) => (c.uid === uid ? { ...c, [flag]: !c[flag] } : c))
+    updateChannels((rows) =>
+      rows.map((c) => (c.uid === uid ? { ...c, [flag]: !c[flag] } : c))
     );
   };
 
@@ -77,7 +92,7 @@ const Board = () => {
     }
     const oldIndex = channelIds.indexOf(active.id);
     const newIndex = channelIds.indexOf(over.id);
-    updateChannels((pattern) => arrayMove(pattern, oldIndex, newIndex));
+    updateChannels((rows) => arrayMove(rows, oldIndex, newIndex));
   };
 
   return (
@@ -97,12 +112,13 @@ const Board = () => {
                   toggleStep={toggleStep}
                   toggleFlag={toggleFlag}
                   deleteChannel={deleteChannel}
+                  setSample={setChannelSample}
                 />
               ))}
             </ul>
           </SortableContext>
         </DndContext>
-        <AddChannel addChannel={addChannel} />
+        <AddChannel addChannel={addChannel} kitId={currentKit} />
       </div>
     </div>
   );
