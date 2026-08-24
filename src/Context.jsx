@@ -25,6 +25,12 @@ const ContextProvider = ({ children }) => {
   );
 
   const [patternNum, setPatternNum] = useState(0);
+  // Step the playhead is on right now (-1 = stopped); driven by the audio
+  // engine's draw queue so visuals track what is actually sounding.
+  const [currentStep, setCurrentStep] = useState(-1);
+  // Transport position: the next step the scheduler will play. A ref so the
+  // running scheduler reads it live — seeking is just writing to it.
+  const nextStepRef = useRef(0);
   const [bpm, setBpm] = useState(120);
   const [volume, setVolume] = useState(80);
   const [started, setStarted] = useState(false);
@@ -55,6 +61,14 @@ const ContextProvider = ({ children }) => {
           : pattern
       )
     );
+  };
+
+  // Jump the transport to a step (DAW ruler-click "locate"). While playing the
+  // scheduler picks it up within one lookahead tick; while paused, move the
+  // frozen playhead there too so the jump is visible.
+  const seekTo = (step) => {
+    nextStepRef.current = step;
+    if (!started) setCurrentStep(step);
   };
 
   // Replace the whole machine state with a shared snapshot. Fields are picked
@@ -104,6 +118,10 @@ const ContextProvider = ({ children }) => {
         setPatterns,
         patternNum,
         setPatternNum,
+        currentStep,
+        setCurrentStep,
+        nextStepRef,
+        seekTo,
         currentKit,
         switchKit,
         bpm,

@@ -144,6 +144,26 @@ body {
       width: 50px;
       margin-left: 4px;
       text-align: center;
+      cursor: pointer;
+
+      &:hover {
+        color: $Primary-200;
+      }
+    }
+    &__led {
+      width: 26px;
+      height: 4px;
+      border-radius: 2px;
+      margin: 3px auto 0;
+      background-color: rgba(255, 255, 255, 0.07);
+    }
+    &__label--now {
+      color: $Primary-200;
+
+      .Board-TopBar__led {
+        background-color: $Primary-200;
+        box-shadow: 0 0 6px rgba(209, 249, 152, 0.45);
+      }
     }
     &__group {
       display: inline-block;
@@ -217,6 +237,16 @@ body {
 
       &:focus {
         outline: none !important;
+      }
+    }
+    // Playhead column: whole column gets a soft wash; sounding cells glow.
+    // Placed after &__item so it wins the equal-specificity cascade.
+    &__item--now {
+      background-color: rgba(209, 249, 152, 0.16);
+
+      &:checked {
+        background-color: #eaffc7;
+        box-shadow: 0 0 8px rgba(209, 249, 152, 0.45), 0 1px 2px black;
       }
     }
 

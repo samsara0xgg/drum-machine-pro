@@ -24,6 +24,8 @@ const Board = () => {
     setPatterns,
     patternNum,
     currentKit,
+    currentStep,
+    seekTo,
     buffersRef,
   } = useContext(Context);
 
@@ -97,7 +99,7 @@ const Board = () => {
 
   return (
     <div className="Board">
-      <TopBar />
+      <TopBar currentStep={currentStep} seekTo={seekTo} />
       <div id="scroll">
         <DndContext collisionDetection={closestCenter} onDragEnd={onDragEnd}>
           <SortableContext
@@ -109,6 +111,7 @@ const Board = () => {
                 <Channel
                   key={channel.uid}
                   channel={channel}
+                  currentStep={currentStep}
                   toggleStep={toggleStep}
                   toggleFlag={toggleFlag}
                   deleteChannel={deleteChannel}

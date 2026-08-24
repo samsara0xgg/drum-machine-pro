@@ -26,6 +26,8 @@ const Display = () => {
     bpm,
     volume,
     currentKit,
+    setCurrentStep,
+    nextStepRef,
   } = useContext(Context);
 
   // Refs mirror the latest state so the running scheduler reads fresh values
@@ -54,7 +56,6 @@ const Display = () => {
     const lookahead = 25.0; // How frequently to call scheduling function (in milliseconds)
     const scheduleAheadTime = 0.1; // How far ahead to schedule audio (sec)
 
-    let currentNote = 0;
     let nextNoteTime = audioCtx.currentTime;
     let timerID;
 
@@ -79,21 +80,43 @@ const Display = () => {
       });
     };
 
+    // Notes are scheduled up to 0.1s before they sound, so the playhead can't
+    // follow the scheduler directly. Each scheduled step goes into a queue and
+    // a rAF loop flips currentStep only once the audio clock reaches its time.
+    const drawQueue = [];
+    let rafID;
+    const draw = () => {
+      while (drawQueue.length && drawQueue[0].time <= audioCtx.currentTime) {
+        setCurrentStep(drawQueue.shift().step);
+      }
+      rafID = requestAnimationFrame(draw);
+    };
+    rafID = requestAnimationFrame(draw);
+
     const scheduler = () => {
       // While there are notes that will need to play before the next interval,
-      // schedule them and advance the pointer.
+      // schedule them and advance the pointer. The transport position lives in
+      // nextStepRef (Context) and is read fresh every note, so pause keeps the
+      // place and a seek from the ruler takes effect within one tick.
       while (nextNoteTime < audioCtx.currentTime + scheduleAheadTime) {
-        scheduleNote(currentNote, nextNoteTime);
+        const step = nextStepRef.current;
+        scheduleNote(step, nextNoteTime);
+        drawQueue.push({ step, time: nextNoteTime });
         // 16 steps per bar, 4 steps per beat
         nextNoteTime += 60.0 / bpmRef.current / 4;
-        currentNote = (currentNote + 1) % 16;
+        nextStepRef.current = (step + 1) % 16;
       }
       timerID = setTimeout(scheduler, lookahead);
     };
     scheduler();
 
-    return () => clearTimeout(timerID);
-  }, [started, audioCtx, masterGain, buffersRef]);
+    // On pause: stop the clock and the drawing, but leave currentStep lit
+    // where it is — the playhead holds its place until resume.
+    return () => {
+      clearTimeout(timerID);
+      cancelAnimationFrame(rafID);
+    };
+  }, [started, audioCtx, masterGain, buffersRef, setCurrentStep, nextStepRef]);
 
   return (
     <Screen>

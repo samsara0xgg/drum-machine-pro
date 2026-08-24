@@ -5,6 +5,7 @@ import { KITS } from "../../service/kits";
 
 const Channel = ({
   channel,
+  currentStep,
   toggleStep,
   toggleFlag,
   deleteChannel,
@@ -88,7 +89,10 @@ const Channel = ({
         key={`clip${i}`}
         checked={on}
         type="checkbox"
-        className="Board-Channel__item"
+        className={
+          "Board-Channel__item" +
+          (i === currentStep ? " Board-Channel__item--now" : "")
+        }
         onChange={() => toggleStep(uid, i)}
         data-step={i}
       />
