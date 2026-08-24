@@ -34,7 +34,7 @@ const StyledButton = styled(Button)(({ theme }) => ({
 }));
 
 const Header = () => {
-  const { bpm, setBpm, volume, setVolume, patterns, patternNum } =
+  const { bpm, setBpm, volume, setVolume, patterns, patternNum, pitch, pan, reverb } =
     useContext(Context);
   const [notice, setNotice] = useState(null);
 
@@ -43,7 +43,15 @@ const Header = () => {
   // address bar becomes the link itself.
   const onSave = async () => {
     try {
-      const slug = await savePattern({ version: 1, bpm, patternNum, patterns });
+      const slug = await savePattern({
+        version: 1,
+        bpm,
+        pitch,
+        pan,
+        reverb,
+        patternNum,
+        patterns,
+      });
       const url = `${window.location.origin}/p/${slug}`;
       window.history.replaceState(null, "", `/p/${slug}`);
       try {

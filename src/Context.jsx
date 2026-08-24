@@ -8,6 +8,34 @@ const audioCtx = new AudioContext(); //Web Audio API
 const masterGain = audioCtx.createGain();
 masterGain.connect(audioCtx.destination);
 
+// Reverb impulse: two seconds of decaying noise, generated in code.
+const makeImpulse = (ctx, seconds = 2, decay = 3) => {
+  const length = ctx.sampleRate * seconds;
+  const buffer = ctx.createBuffer(2, length, ctx.sampleRate);
+  for (let ch = 0; ch < 2; ch++) {
+    const data = buffer.getChannelData(ch);
+    for (let i = 0; i < length; i++) {
+      data[i] = (Math.random() * 2 - 1) * (1 - i / length) ** decay;
+    }
+  }
+  return buffer;
+};
+
+// Master FX chain: notes enter fxIn, pass the panner, then split dry/wet.
+const fxIn = audioCtx.createGain();
+const panNode = audioCtx.createStereoPanner();
+const convolver = audioCtx.createConvolver();
+convolver.buffer = makeImpulse(audioCtx);
+const dryGain = audioCtx.createGain();
+const wetGain = audioCtx.createGain();
+wetGain.gain.value = 0;
+fxIn.connect(panNode);
+panNode.connect(dryGain);
+panNode.connect(convolver);
+dryGain.connect(masterGain);
+convolver.connect(wetGain);
+wetGain.connect(masterGain);
+
 const PATTERN_COUNT = 12;
 const DEFAULT_CHANNEL_COUNT = 6;
 
@@ -33,6 +61,18 @@ const ContextProvider = ({ children }) => {
   const nextStepRef = useRef(0);
   const [bpm, setBpm] = useState(120);
   const [volume, setVolume] = useState(80);
+  const [pitch, setPitch] = useState(0);
+  const [pan, setPan] = useState(0);
+  const [reverb, setReverb] = useState(0);
+
+  useEffect(() => {
+    panNode.pan.value = pan;
+  }, [pan]);
+
+  useEffect(() => {
+    dryGain.gain.value = 1 - reverb;
+    wetGain.gain.value = reverb;
+  }, [reverb]);
   const [started, setStarted] = useState(false);
 
   // The kit "loaded" into the pattern currently being viewed/edited
@@ -91,6 +131,12 @@ const ContextProvider = ({ children }) => {
     );
     setPatternNum(payload.patternNum);
     setBpm(payload.bpm);
+    // FX fields are optional and clamped; older links just get the defaults.
+    const num = (v, min, max, dflt) =>
+      typeof v === "number" ? Math.min(max, Math.max(min, v)) : dflt;
+    setPitch(num(payload.pitch, -24, 24, 0));
+    setPan(num(payload.pan, -1, 1, 0));
+    setReverb(num(payload.reverb, 0, 1, 0));
     return true;
   };
 
@@ -128,6 +174,13 @@ const ContextProvider = ({ children }) => {
         setBpm,
         volume,
         setVolume,
+        pitch,
+        setPitch,
+        pan,
+        setPan,
+        reverb,
+        setReverb,
+        fxIn,
         started,
         setStarted,
         audioCtx,

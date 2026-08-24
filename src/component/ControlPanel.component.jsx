@@ -1,38 +1,8 @@
-import { Box, Card, Container, Grid, Paper, styled } from "@mui/material";
-import React, { useState } from "react";
+import { Box, Card, Container, Grid, styled } from "@mui/material";
+import React, { useContext } from "react";
 import Knob from "./ControlPanel/Knob.component";
 import SelectBox from "./ControlPanel/SelectBox.component";
-
-const KNOB_INFO = [
-  {
-    name: "PITCH",
-    max: 24,
-    min: -24,
-    step: 1,
-    value: 0,
-  },
-  {
-    name: "VOL",
-    max: 100,
-    min: 0,
-    step: 1,
-    value: 75,
-  },
-  {
-    name: "PAN",
-    max: 1,
-    min: -1,
-    step: 0.1,
-    value: 0,
-  },
-  {
-    name: "REVERB",
-    max: 1,
-    min: 0,
-    step: 0.01,
-    value: 0.5,
-  },
-];
+import { Context } from "../Context";
 
 const KnobContainer = styled(Container)(({ theme }) => ({
   display: "flex",
@@ -40,16 +10,17 @@ const KnobContainer = styled(Container)(({ theme }) => ({
   alignItems: "center",
 }));
 
-const ControlPanel = (props) => {
-  const [controlData] = useState(KNOB_INFO);
+const ControlPanel = () => {
+  const { pitch, setPitch, volume, setVolume, pan, setPan, reverb, setReverb } =
+    useContext(Context);
 
-  const knobPanel = controlData.map((_, index) => (
-    <Grid key={`knobPanel${index}`} item xs={6}>
-      <KnobContainer>
-        <Knob info={controlData[index]} />
-      </KnobContainer>
-    </Grid>
-  ));
+  // Each knob drives one master control; VOL shares state with the header slider.
+  const knobs = [
+    { name: "PITCH", min: -24, max: 24, step: 1, defaultValue: 0, value: pitch, onChange: setPitch },
+    { name: "VOL", min: 0, max: 100, step: 1, defaultValue: 80, value: volume, onChange: setVolume },
+    { name: "PAN", min: -1, max: 1, step: 0.1, defaultValue: 0, value: pan, onChange: setPan },
+    { name: "REVERB", min: 0, max: 1, step: 0.01, defaultValue: 0, value: reverb, onChange: setReverb },
+  ];
 
   return (
     <Card elevation={5} sx={{ p: 2 }}>
@@ -59,20 +30,15 @@ const ControlPanel = (props) => {
             <SelectBox label={"instrument"} />
           </Box>
         </Grid>
-        {knobPanel}
+        {knobs.map((knob) => (
+          <Grid key={knob.name} item xs={6}>
+            <KnobContainer>
+              <Knob {...knob} />
+            </KnobContainer>
+          </Grid>
+        ))}
       </Grid>
     </Card>
   );
 };
 export default ControlPanel;
-{
-  /* <div className="ControlPanel">
-      <SelectBox label={"instrument"} />
-      <div className="ControlPanel-area">
-        <Knob info={controlData[0]} />
-        <Knob info={controlData[1]} />
-        <Knob info={controlData[2]} />
-        <Knob info={controlData[3]} />
-      </div>
-    </div> */
-}

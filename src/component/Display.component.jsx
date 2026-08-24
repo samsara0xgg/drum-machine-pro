@@ -28,15 +28,19 @@ const Display = () => {
     currentKit,
     setCurrentStep,
     nextStepRef,
+    pitch,
+    fxIn,
   } = useContext(Context);
 
   // Refs mirror the latest state so the running scheduler reads fresh values
   // (edits and BPM changes are picked up mid-playback) without restarting.
   const channelsRef = useRef(patterns[patternNum].channels);
   const bpmRef = useRef(bpm);
+  const pitchRef = useRef(pitch);
   useEffect(() => {
     channelsRef.current = patterns[patternNum].channels;
     bpmRef.current = bpm;
+    pitchRef.current = pitch;
   });
 
   useEffect(() => {
@@ -73,9 +77,11 @@ const Display = () => {
         if (!buffer) return; // still loading
 
         const source = new AudioBufferSourceNode(audioCtx, { buffer });
+        // PITCH knob: one semitone doubles the rate every 12 steps.
+        source.playbackRate.value = 2 ** (pitchRef.current / 12);
         const gainNode = new GainNode(audioCtx, { gain: def.gain });
         source.connect(gainNode);
-        gainNode.connect(masterGain);
+        gainNode.connect(fxIn);
         source.start(time);
       });
     };
@@ -116,7 +122,7 @@ const Display = () => {
       clearTimeout(timerID);
       cancelAnimationFrame(rafID);
     };
-  }, [started, audioCtx, masterGain, buffersRef, setCurrentStep, nextStepRef]);
+  }, [started, audioCtx, fxIn, buffersRef, setCurrentStep, nextStepRef]);
 
   return (
     <Screen>

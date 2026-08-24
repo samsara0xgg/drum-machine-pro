@@ -305,6 +305,19 @@ body {
   }
 }
 
+.ControlPanel-knob {
+  text-align: center;
+
+  &__dial {
+    width: 40px;
+    height: 40px;
+    margin: 0 auto;
+    background-size: 40px 1240px;
+    cursor: grab;
+    touch-action: none;
+  }
+}
+
 #fackDetele {
   width: 16px;
   height: 16px;
