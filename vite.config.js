@@ -7,5 +7,10 @@ export default defineConfig({
   server: {
     port: 3000,
     open: true,
+    // Dev-only: forward API calls to the Express server so the app and the
+    // backend share an origin (no CORS during development).
+    proxy: {
+      "/api": "http://localhost:3001",
+    },
   },
 });

@@ -2,6 +2,10 @@
 
 # dependencies
 /node_modules
+/server/node_modules
+
+# server secrets (keep .env.example)
+/server/.env
 /.pnp
 .pnp.js
 
