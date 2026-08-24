@@ -7,6 +7,7 @@ const Pattern = () => {
 
   return (
     <div className="Machine-card">
+      <span className="Machine-card__label">PATTERN</span>
       <div className="Pattern">
         {patterns.map((_, i) => (
           <button

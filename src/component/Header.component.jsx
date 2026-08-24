@@ -1,13 +1,8 @@
 import React, { useContext } from "react";
-import Slider from "./Header/Slider.component";
 import { Context } from "../Context";
 
 const Header = () => {
   const {
-    bpm,
-    setBpm,
-    volume,
-    setVolume,
     library,
     loadedId,
     setDrawerOpen,
@@ -30,8 +25,7 @@ const Header = () => {
         <i></i>
         <i></i>
       </button>
-      <Slider label="volume" value={volume} onChange={setVolume} />
-      <Slider label="BPM" min="40" max="200" value={bpm} onChange={setBpm} />
+      <span className="Header-brand">DRUM MACHINE PRO</span>
       <div className="Header-grow"></div>
       <button className="Header-button" onClick={() => setSaveDialogOpen(true)}>
         SAVE

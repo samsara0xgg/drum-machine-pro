@@ -4,26 +4,23 @@ import Select from "@mui/material/Select";
 import { KITS } from "../../service/kits";
 import { Context } from "../../Context";
 
-export default function SelectBox(props) {
+export default function SelectBox() {
   const { currentKit, switchKit } = useContext(Context);
 
   return (
-    <>
-      <span className="ControlPanel-select__label">{props.label}</span>
-      <Select
-        variant="standard"
-        disableUnderline
-        sx={{ fontSize: "12.5px" }}
-        id="kit-select"
-        value={currentKit}
-        onChange={(e) => switchKit(e.target.value)}
-      >
-        {Object.entries(KITS).map(([kitId, kit]) => (
-          <MenuItem key={kitId} value={kitId}>
-            {kit.name} · {kit.suggestedBpm} BPM
-          </MenuItem>
-        ))}
-      </Select>
-    </>
+    <Select
+      variant="standard"
+      disableUnderline
+      sx={{ fontSize: "12.5px" }}
+      id="kit-select"
+      value={currentKit}
+      onChange={(e) => switchKit(e.target.value)}
+    >
+      {Object.entries(KITS).map(([kitId, kit]) => (
+        <MenuItem key={kitId} value={kitId}>
+          {kit.name} · {kit.suggestedBpm} BPM
+        </MenuItem>
+      ))}
+    </Select>
   );
 }

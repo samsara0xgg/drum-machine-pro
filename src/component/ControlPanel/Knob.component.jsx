@@ -21,7 +21,9 @@ const Knob = ({ name, min, max, step, value, defaultValue, onChange }) => {
     if (!drag.current) return;
     // Right and up both increase; 150px of drag covers the full range.
     const px = e.clientX - drag.current.x + (drag.current.y - e.clientY);
-    onChange(clamp(drag.current.startValue + (px / 150) * (max - min)));
+    const v = clamp(drag.current.startValue + (px / 150) * (max - min));
+    // Only report real changes, so tiny jitters don't flash the screen.
+    if (v !== value) onChange(v);
   };
 
   const onPointerUp = () => {

@@ -1,8 +1,9 @@
-@import url("https://fonts.googleapis.com/css2?family=PT+Sans:wght@400;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=PT+Sans:wght@400;700&family=DM+Mono:wght@400;500&display=swap");
 
 $Surface-00dp: #121212;
 $Primary-200: #d1f998;
 $Secondary-200: #b39ddb;
+$Mono: "DM Mono", "SF Mono", Menlo, monospace;
 
 @mixin dp($overlay) {
   background-color: rgba($color: #ffffff, $alpha: $overlay);
@@ -36,10 +37,15 @@ body {
   background-color: black;
 }
 
-// The machine body: one centered bezel, responsive instead of the old fixed 1200px + scale hack
+// The machine body: one centered bezel, responsive instead of the old fixed 1200px + scale hack.
+// Step cells flex between 38-42px against the viewport (320px = page padding
+// + bezel border and padding + board padding + name column + delete column),
+// so the sequencer stays scroll-free down to ~990px windows; below that it
+// scrolls inside the bezel.
 .Machine {
-  max-width: 1200px;
-  margin: 40px auto;
+  --cell: clamp(38px, calc((100vw - 320px) / 16 - 4px), 42px);
+  max-width: 1040px;
+  margin: 24px auto;
   padding: 22px;
   background-color: #1a1a1a;
   border: 1px solid rgba(255, 255, 255, 0.09);
@@ -63,6 +69,20 @@ body {
     display: flex;
     gap: 14px;
     align-items: center;
+    position: relative;
+
+    // silkscreen label printed on the bezel over the card's top edge
+    &__label {
+      position: absolute;
+      top: -7px;
+      left: 10px;
+      background-color: #1a1a1a;
+      padding: 0 5px;
+      font-size: 9px;
+      letter-spacing: 0.14em;
+      font-weight: bold;
+      @include fontdp(0.5);
+    }
   }
   &-grow {
     flex: 1;
@@ -88,7 +108,7 @@ body {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    gap: 5px;
+    gap: 4px;
     cursor: pointer;
 
     i {
@@ -100,6 +120,12 @@ body {
     &:hover i {
       background-color: $Primary-200;
     }
+  }
+  &-brand {
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    @include fontdp(0.5);
+    flex: none;
   }
   &-grow {
     flex: 1;
@@ -133,36 +159,150 @@ body {
   display: flex;
   align-items: center;
   gap: 18px;
-  padding: 12px 20px;
+  padding: 10px 20px;
+  min-height: 62px;
 
-  &-brand {
-    font-size: 11px;
-    letter-spacing: 0.22em;
-    @include fontdp(0.6);
-  }
-  &-info {
-    flex: 1;
-    text-align: center;
-    font-size: 15px;
-    @include fontdp(0.87);
+  // Part 1 (left): the last param touched; fully dark when idle.
+  // Same width as the right zone, so Part 2 sits exactly centered.
+  &-param {
+    width: 190px;
+    flex: none;
+    text-align: left;
+    opacity: 0;
+    transition: opacity 0.35s;
 
-    b {
+    &.is-live {
+      opacity: 1;
+    }
+    &__name {
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+      white-space: nowrap;
+      @include fontdp(0.5);
+    }
+    &__value {
+      font-family: $Mono;
+      font-size: 21px;
+      font-weight: 500;
       color: $Primary-200;
+      line-height: 1.1;
+      white-space: nowrap;
     }
   }
+
+  // Part 2 (center): the always-on home view, never interrupted
+  &-main {
+    flex: 1;
+    text-align: center;
+    min-width: 0;
+
+    &__kit {
+      font-size: 10.5px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      margin-bottom: 3px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      @include fontdp(0.5);
+    }
+    &__bpm {
+      font-family: $Mono;
+      font-size: 21px;
+      font-weight: 500;
+      color: $Primary-200;
+      line-height: 1.1;
+      white-space: nowrap;
+      transition: color 0.15s, text-shadow 0.15s;
+
+      // lights up while the tempo is being adjusted
+      &.is-hot {
+        color: #eaffc7;
+        text-shadow: 0 0 8px rgba(209, 249, 152, 0.45);
+      }
+    }
+  }
+
+  // Fixed-width right zone mirrors Part 1; the dots appear inside it while
+  // playing, so the center readout never shifts.
+  &-right {
+    width: 190px;
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+  }
+
+  // 16-step LED strip, shown only while playing; quarter beats sit brighter
+  &-dots {
+    display: flex;
+    gap: 4px;
+    flex: none;
+
+    i {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background-color: rgba(255, 255, 255, 0.13);
+
+      &:nth-child(4n + 1) {
+        background-color: rgba(255, 255, 255, 0.26);
+      }
+      &.is-now {
+        background-color: $Primary-200;
+        box-shadow: 0 0 5px rgba(209, 249, 152, 0.6);
+      }
+    }
+  }
+
+  // transport speaks the pattern-pad language: same square, same active state
   &-play {
     width: 38px;
     height: 38px;
-    border-radius: 50%;
-    border: 2px solid $Primary-200;
-    background: none;
-    color: $Primary-200;
-    font-size: 13px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     flex: none;
+    position: relative;
+    border: none;
+    border-radius: 7px;
+    padding: 0;
+    background-color: #242424;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06), 0 2px 3px black;
+    transition: background-color 0.15s;
+    cursor: pointer;
+
+    &__tri {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-38%, -50%);
+      border-style: solid;
+      border-width: 6px 0 6px 9px;
+      border-color: transparent transparent transparent $Primary-200;
+    }
+    &__bars {
+      display: none;
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 10px;
+      height: 12px;
+      border-left: 3px solid $Primary-200;
+      border-right: 3px solid $Primary-200;
+    }
+    &.is-playing {
+      background-color: rgba(209, 249, 152, 0.16);
+      box-shadow: inset 0 0 0 1px $Primary-200, 0 2px 3px black;
+
+      .Screen-play__tri {
+        display: none;
+      }
+      .Screen-play__bars {
+        display: block;
+      }
+    }
   }
 }
 
@@ -183,13 +323,6 @@ body {
     letter-spacing: 0.08em;
     margin-top: 4px;
   }
-}
-
-.ControlPanel-select__label {
-  @include fontdp(0.5);
-  font-size: 10px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
 }
 
 // 12 patterns as hardware pads, 6 per row
@@ -230,21 +363,22 @@ body {
   &-TopBar {
     display: flex;
     align-items: center;
-    justify-content: space-evenly;
-    height: 50px;
-    min-width: 1100px;
+    height: 44px;
+    min-width: 890px;
 
     &__channel {
       @include fontdp(0.87);
       display: inline-block;
-      width: 210px;
+      width: 190px;
       padding-left: 10px;
+      font-size: 14px;
     }
     &__label {
       display: inline-block;
-      @include fontdp(0.6);
-      width: 50px;
-      margin-left: 4px;
+      @include fontdp(0.5);
+      width: var(--cell);
+      margin: 0 2px;
+      font-size: 11px;
       text-align: center;
       cursor: pointer;
 
@@ -253,7 +387,7 @@ body {
       }
     }
     &__led {
-      width: 26px;
+      width: 22px;
       height: 4px;
       border-radius: 2px;
       margin: 3px auto 0;
@@ -278,21 +412,20 @@ body {
 
   &-Channel {
     display: flex;
-    justify-content: space-evenly;
-    height: 54px;
+    align-items: center;
+    height: calc(var(--cell) + 4px);
 
     &__id {
       @include fontdp(0.87);
-      display: inline-block;
-      width: 120px;
+      flex: 1;
+      min-width: 0;
       font-size: 14px;
-      height: 50px;
-      vertical-align: top;
-      line-height: 30px;
-      margin: 10px auto 10px 10px;
     }
     // The per-row sample picker reuses __id sizing but needs native-select resets
     select.Board-Channel__id {
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
       height: 30px;
       background: transparent;
       border: none;
@@ -305,22 +438,27 @@ body {
         color: #1a1b26;
       }
     }
+    // Laid out like the mock: drag handle, name, then the two LEDs flush right
     &__info {
-      display: inline-block;
-      height: 50px;
-      width: 210px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 8px;
+      height: var(--cell);
+      width: 190px;
       border-radius: 7px;
-      margin-top: 4px;
       @include dp(0.2);
     }
 
     &__dragicon {
       cursor: pointer;
-      margin: 10px 0 10px 14px;
+      flex: none;
     }
     &__stateicon {
-      display: inline-block;
-      height: 50px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: none;
     }
 
     &__group {
@@ -331,10 +469,10 @@ body {
       -moz-appearance: none;
       appearance: none;
       display: inline-block;
-      margin: 4px 2px;
-      width: 50px;
-      height: 50px;
-      border-radius: 10px;
+      margin: 2px;
+      width: var(--cell);
+      height: var(--cell);
+      border-radius: 8px;
       @include dp(0.04);
 
       &:checked {
@@ -357,24 +495,31 @@ body {
     }
 
     &__delete {
-      margin-top: 1.9vh;
-      display: flex;
-      align-items: center;
+      width: 16px;
+      margin-left: 8px;
+      font-size: 13px;
+      text-align: center;
+      @include fontdp(0.35);
       cursor: pointer;
+
+      &:hover {
+        @include fontdp(0.8);
+      }
     }
   }
   &-AddChannel {
     @include dp(0.11);
-    width: 210px;
-    height: 50px;
-    margin: 4px 13px;
+    width: 190px;
+    height: calc(var(--cell) - 4px);
+    margin: 4px 0;
     border-radius: 5px;
-    @include fontdp(0.6);
+    @include fontdp(0.5);
     display: flex;
     justify-content: center;
     align-items: center;
     font-size: 10px;
     font-weight: bold;
+    letter-spacing: 0.06em;
   }
 }
 
@@ -386,7 +531,7 @@ body {
   background-color: #84976e;
   width: 12px;
   height: 12px;
-  margin: 19px 0;
+  margin: 0;
   border-radius: 50%;
 
   &:checked {
@@ -402,7 +547,7 @@ body {
   background-color: rgb(170, 123, 111);
   width: 12px;
   height: 12px;
-  margin: 19px 5px;
+  margin: 0;
 
   border-radius: 50%;
 
@@ -420,8 +565,8 @@ body {
 
 #scroll {
   overflow: auto;
-  height: 380px;
-  min-width: 1100px;
+  max-height: 330px;
+  min-width: 890px;
 }
 
 ::-webkit-scrollbar {
@@ -434,56 +579,6 @@ ul {
 }
 li {
   list-style-type: none;
-}
-
-.sliderControl {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.sliderLabel {
-  @include fontdp(0.6);
-  font-size: 11px;
-  text-transform: uppercase;
-}
-
-input[type="range"] {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 80px;
-  height: 12px;
-  background: transparent;
-  outline: 0;
-  border: 0;
-
-  &::-webkit-slider-runnable-track {
-    height: 4px;
-    border-radius: 2px;
-    background: rgba(255, 255, 255, 0.09);
-  }
-  &::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 12px;
-    height: 12px;
-    margin-top: -4px;
-    border-radius: 50%;
-    background: $Primary-200;
-    cursor: ew-resize;
-  }
-  &::-moz-range-track {
-    height: 4px;
-    border-radius: 2px;
-    background: rgba(255, 255, 255, 0.09);
-  }
-  &::-moz-range-thumb {
-    width: 12px;
-    height: 12px;
-    border: none;
-    border-radius: 50%;
-    background: $Primary-200;
-    cursor: ew-resize;
-  }
 }
 
 // left Library drawer + its overlay

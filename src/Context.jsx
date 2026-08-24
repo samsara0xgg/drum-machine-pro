@@ -130,6 +130,15 @@ const ContextProvider = ({ children }) => {
   const [notice, setNotice] = useState(null);
   const toast = (msg) => setNotice({ msg });
 
+  // Part 1 of the screen: the latest param change to show there; a fresh
+  // object each time so Display's 1.2s fade timer restarts.
+  const [paramFlash, setParamFlash] = useState(null);
+  const flashParam = (name, text) => setParamFlash({ name, text, ts: Date.now() });
+
+  // Tempo lives in the center readout instead, so it glows there.
+  const [bpmFlash, setBpmFlash] = useState(null);
+  const flashBpm = () => setBpmFlash({ ts: Date.now() });
+
   // Keep the library mirrored in localStorage; storage may be blocked or full.
   useEffect(() => {
     try {
@@ -237,10 +246,11 @@ const ContextProvider = ({ children }) => {
       }))
     );
     setPatternNum(payload.patternNum);
-    setBpm(payload.bpm);
-    // FX fields are optional and clamped; older links just get the defaults.
+    // Numeric fields are clamped to their controls' ranges; missing FX
+    // fields (older links) just get the defaults.
     const num = (v, min, max, dflt) =>
       typeof v === "number" ? Math.min(max, Math.max(min, v)) : dflt;
+    setBpm(num(payload.bpm, 40, 200, 120));
     setPitch(num(payload.pitch, -24, 24, 0));
     setPan(num(payload.pan, -1, 1, 0));
     setReverb(num(payload.reverb, 0, 1, 0));
@@ -307,6 +317,10 @@ const ContextProvider = ({ children }) => {
         newMachine,
         notice,
         toast,
+        paramFlash,
+        flashParam,
+        bpmFlash,
+        flashBpm,
       }}
     >
       {children}

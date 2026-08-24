@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useRef } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import { Context } from "../Context";
 import { KITS, sampleDef } from "../service/kits";
 
@@ -14,11 +14,32 @@ const Display = () => {
     bpm,
     volume,
     currentKit,
+    currentStep,
     setCurrentStep,
     nextStepRef,
     pitch,
     fxIn,
+    paramFlash,
+    bpmFlash,
   } = useContext(Context);
+
+  // Part 1 lights up on any param change, then fades fully dark 1.2s later.
+  const [paramLive, setParamLive] = useState(false);
+  useEffect(() => {
+    if (!paramFlash) return;
+    setParamLive(true);
+    const timer = setTimeout(() => setParamLive(false), 1200);
+    return () => clearTimeout(timer);
+  }, [paramFlash]);
+
+  // Tempo changes glow the center BPM readout with the same 1.2s timing.
+  const [bpmHot, setBpmHot] = useState(false);
+  useEffect(() => {
+    if (!bpmFlash) return;
+    setBpmHot(true);
+    const timer = setTimeout(() => setBpmHot(false), 1200);
+    return () => clearTimeout(timer);
+  }, [bpmFlash]);
 
   // Refs mirror the latest state so the running scheduler reads fresh values
   // (edits and BPM changes are picked up mid-playback) without restarting.
@@ -114,17 +135,35 @@ const Display = () => {
 
   return (
     <div className="Screen">
-      <span className="Screen-brand">DRUM MACHINE PRO</span>
-      <span className="Screen-info">
-        {KITS[currentKit].name} · <b>{bpm} BPM</b> · Pattern {patternNum + 1}
-      </span>
-      <button
-        className="Screen-play"
-        onClick={() => setStarted(!started)}
-        title={started ? "Pause" : "Play"}
-      >
-        {started ? "❚❚" : "▶︎"}
-      </button>
+      <div className={"Screen-param" + (paramLive ? " is-live" : "")}>
+        <div className="Screen-param__name">{paramFlash?.name}</div>
+        <div className="Screen-param__value">{paramFlash?.text}</div>
+      </div>
+      <div className="Screen-main">
+        <div className="Screen-main__kit">
+          {KITS[currentKit].name} · PATTERN {patternNum + 1}
+        </div>
+        <div className={"Screen-main__bpm" + (bpmHot ? " is-hot" : "")}>
+          {bpm} BPM
+        </div>
+      </div>
+      <div className="Screen-right">
+        {started && (
+          <div className="Screen-dots">
+            {[...Array(16)].map((_, i) => (
+              <i key={i} className={i === currentStep ? "is-now" : ""}></i>
+            ))}
+          </div>
+        )}
+        <button
+          className={"Screen-play" + (started ? " is-playing" : "")}
+          onClick={() => setStarted(!started)}
+          title={started ? "Pause" : "Play"}
+        >
+          <span className="Screen-play__tri"></span>
+          <span className="Screen-play__bars"></span>
+        </button>
+      </div>
     </div>
   );
 };
