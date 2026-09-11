@@ -360,11 +360,19 @@ body {
   padding: 14px;
   overflow-x: auto;
 
+  &-scrollHint {
+    display: none;
+  }
+
   &-TopBar {
     display: flex;
     align-items: center;
     height: 44px;
     min-width: 890px;
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background-color: #252525;
 
     &__channel {
       @include fontdp(0.87);
@@ -569,8 +577,13 @@ body {
   min-width: 890px;
 }
 
-::-webkit-scrollbar {
-  width: 0px;
+#scroll::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+#scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
 }
 
 ul {
@@ -749,5 +762,169 @@ li {
 
   &.is-show {
     transform: translateX(-50%) translateY(0);
+  }
+}
+
+// Mobile keeps the transport visible and scrolls only the step matrix.
+@media (max-width: 600px) {
+  body {
+    padding: 0 8px;
+  }
+
+  .Machine {
+    --cell: 42px;
+    width: 100%;
+    margin: 8px auto;
+    padding: 10px;
+    gap: 10px;
+    border-radius: 12px;
+  }
+
+  .Header {
+    gap: 8px;
+    padding: 8px;
+
+    &-brand {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    &-button {
+      min-height: 44px;
+      padding: 8px 10px;
+    }
+    &-button:nth-of-type(n + 3) {
+      display: none;
+    }
+  }
+
+  .Screen {
+    min-height: 64px;
+    gap: 10px;
+    padding: 10px 12px;
+
+    &-param {
+      display: none;
+    }
+    &-main {
+      text-align: left;
+    }
+    &-right {
+      width: auto;
+      gap: 0;
+    }
+    &-dots {
+      display: none;
+    }
+    &-play {
+      width: 44px;
+      height: 44px;
+    }
+  }
+
+  .Machine-crow {
+    gap: 10px;
+    align-items: stretch;
+  }
+  .Machine-card {
+    padding: 11px;
+    gap: 11px;
+  }
+  .Machine-grow {
+    display: none;
+  }
+
+  .Pattern {
+    grid-template-columns: repeat(6, 42px);
+    gap: 6px;
+
+    &-pad {
+      width: 42px;
+      height: 42px;
+    }
+  }
+
+  .Board {
+    padding: 8px;
+    overflow: hidden;
+
+    &-scrollHint {
+      display: block;
+      margin: 0 4px 6px;
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-align: right;
+      text-transform: uppercase;
+    }
+  }
+
+  #scroll {
+    width: 100%;
+    min-width: 0;
+    max-height: 420px;
+    overflow-x: auto;
+    overflow-y: auto;
+    scroll-snap-type: x proximity;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .Board-TopBar {
+    min-width: 868px;
+
+    &__channel {
+      position: sticky;
+      left: 0;
+      z-index: 4;
+      width: 116px;
+      padding-left: 8px;
+      background: #252525;
+    }
+    &__label:nth-child(4n + 1) {
+      scroll-snap-align: start;
+    }
+  }
+
+  .Board-Channel {
+    min-width: 868px;
+
+    &__info {
+      position: sticky;
+      left: 0;
+      z-index: 3;
+      width: 116px;
+      padding: 0 7px;
+      gap: 5px;
+      background-color: #5a5a5a;
+    }
+    &__dragicon {
+      width: 14px;
+      height: 14px;
+    }
+    &__stateicon {
+      gap: 5px;
+    }
+    &__mute,
+    &__solo {
+      width: 14px;
+      height: 14px;
+    }
+    select.Board-Channel__id {
+      font-size: 12px;
+    }
+    &__item {
+      touch-action: manipulation;
+    }
+  }
+
+  .Board-AddChannel {
+    position: sticky;
+    left: 0;
+    width: 116px;
+  }
+
+  .Library {
+    width: min(320px, 88vw);
   }
 }

@@ -1,6 +1,7 @@
 import React, { useContext, useEffect, useRef, useState } from "react";
 import { Context } from "../Context";
-import { KITS, sampleDef } from "../service/kits";
+import { KITS, loadSample, sampleDef } from "../service/kits";
+import { ensureAudioReady } from "../service/audio";
 
 const Display = () => {
   const {
@@ -21,7 +22,33 @@ const Display = () => {
     fxIn,
     paramFlash,
     bpmFlash,
+    toast,
   } = useContext(Context);
+
+  const [starting, setStarting] = useState(false);
+
+  const togglePlayback = async () => {
+    if (started) {
+      setStarted(false);
+      return;
+    }
+
+    setStarting(true);
+    try {
+      // resume() must happen directly inside this click handler on iOS.
+      await ensureAudioReady(audioCtx);
+      await Promise.all(
+        patterns[patternNum].channels.map((channel) =>
+          loadSample(audioCtx, sampleDef(channel).sample, buffersRef.current)
+        )
+      );
+      setStarted(true);
+    } catch (error) {
+      toast(error?.message || "Could not load audio. Tap play to try again.");
+    } finally {
+      setStarting(false);
+    }
+  };
 
   // Part 1 lights up on any param change, then fades fully dark 1.2s later.
   const [paramLive, setParamLive] = useState(false);
@@ -157,8 +184,10 @@ const Display = () => {
         )}
         <button
           className={"Screen-play" + (started ? " is-playing" : "")}
-          onClick={() => setStarted(!started)}
-          title={started ? "Pause" : "Play"}
+          onClick={togglePlayback}
+          disabled={starting}
+          title={starting ? "Loading sounds" : started ? "Pause" : "Play"}
+          aria-label={starting ? "Loading sounds" : started ? "Pause" : "Play"}
         >
           <span className="Screen-play__tri"></span>
           <span className="Screen-play__bars"></span>

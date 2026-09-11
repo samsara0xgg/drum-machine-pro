@@ -4,7 +4,8 @@ import { loadPattern } from "./service/api";
 
 const Context = React.createContext();
 
-const audioCtx = new AudioContext(); //Web Audio API
+const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+const audioCtx = new AudioContextClass(); // Web Audio API
 const masterGain = audioCtx.createGain();
 masterGain.connect(audioCtx.destination);
 

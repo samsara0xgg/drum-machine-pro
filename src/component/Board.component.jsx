@@ -99,8 +99,11 @@ const Board = () => {
 
   return (
     <div className="Board">
-      <TopBar currentStep={currentStep} seekTo={seekTo} />
+      <div className="Board-scrollHint" aria-hidden="true">
+        Swipe steps horizontally →
+      </div>
       <div id="scroll">
+        <TopBar currentStep={currentStep} seekTo={seekTo} />
         <DndContext collisionDetection={closestCenter} onDragEnd={onDragEnd}>
           <SortableContext
             items={channelIds}
