@@ -6,7 +6,7 @@ const Pattern = () => {
   const { patterns, patternNum, setPatternNum } = useContext(Context);
 
   return (
-    <div className="Machine-card">
+    <div className="Machine-card Machine-card--pattern">
       <span className="Machine-card__label">PATTERN</span>
       <div className="Pattern">
         {patterns.map((_, i) => (

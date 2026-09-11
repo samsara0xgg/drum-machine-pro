@@ -47,7 +47,18 @@ const Knob = ({ name, min, max, step, value, defaultValue, onChange }) => {
         onDoubleClick={() => onChange(defaultValue)}
         title={`${name}: ${value}`}
       />
+      <input
+        className="ControlPanel-knob__slider"
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        aria-label={name}
+        onChange={(e) => onChange(Number(e.target.value))}
+      />
       <div className="ControlPanel-knob__label">{name}</div>
+      <output className="ControlPanel-knob__value">{value}</output>
     </div>
   );
 };

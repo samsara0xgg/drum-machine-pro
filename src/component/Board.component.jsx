@@ -1,4 +1,5 @@
-import React, { useContext, useEffect } from "react";
+import React, { useContext, useEffect, useState } from "react";
+import useMediaQuery from "@mui/material/useMediaQuery";
 import TopBar from "./Board/TopBar.component";
 import Channel from "./Board/Channel.component";
 import AddChannel from "./Board/AddChannel.component";
@@ -16,6 +17,7 @@ import {
   sampleDef,
 } from "../service/kits";
 import { Context } from "../Context";
+import { pageForStep, stepsForPage } from "../service/mobile";
 
 const Board = () => {
   const {
@@ -27,7 +29,22 @@ const Board = () => {
     currentStep,
     seekTo,
     buffersRef,
+    started,
   } = useContext(Context);
+
+  const isMobile = useMediaQuery("(max-width:600px)");
+  const [mobilePage, setMobilePage] = useState(0);
+
+  // Follow the sounding group just four times per bar, not on every step.
+  useEffect(() => {
+    if (isMobile && started && currentStep >= 0) {
+      setMobilePage(pageForStep(currentStep));
+    }
+  }, [isMobile, started, currentStep]);
+
+  const visibleSteps = isMobile
+    ? stepsForPage(mobilePage)
+    : Array.from({ length: 16 }, (_, index) => index);
 
   const channels = patterns[patternNum].channels;
 
@@ -99,11 +116,20 @@ const Board = () => {
 
   return (
     <div className="Board">
-      <div className="Board-scrollHint" aria-hidden="true">
-        Swipe steps horizontally →
+      <div className="Board-pager" aria-label="Step groups">
+        {[0, 1, 2, 3].map((page) => (
+          <button
+            key={page}
+            className={"Board-pager__button" + (page === mobilePage ? " is-active" : "")}
+            aria-pressed={page === mobilePage}
+            onClick={() => setMobilePage(page)}
+          >
+            {page * 4 + 1}–{page * 4 + 4}
+          </button>
+        ))}
       </div>
       <div id="scroll">
-        <TopBar currentStep={currentStep} seekTo={seekTo} />
+        <TopBar currentStep={currentStep} seekTo={seekTo} stepIndices={visibleSteps} />
         <DndContext collisionDetection={closestCenter} onDragEnd={onDragEnd}>
           <SortableContext
             items={channelIds}
@@ -119,6 +145,7 @@ const Board = () => {
                   toggleFlag={toggleFlag}
                   deleteChannel={deleteChannel}
                   setSample={setChannelSample}
+                  stepIndices={visibleSteps}
                 />
               ))}
             </ul>

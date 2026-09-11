@@ -10,6 +10,7 @@ const Channel = ({
   toggleFlag,
   deleteChannel,
   setSample,
+  stepIndices,
 }) => {
   const { uid, steps, muted, solo } = channel;
 
@@ -84,10 +85,10 @@ const Channel = ({
   };
 
   const createChannelItem = () => {
-    return steps.map((on, i) => (
+    return stepIndices.map((i) => (
       <input
         key={`clip${i}`}
-        checked={on}
+        checked={steps[i]}
         type="checkbox"
         className={
           "Board-Channel__item" +

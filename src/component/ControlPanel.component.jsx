@@ -40,19 +40,19 @@ const ControlPanel = () => {
 
   return (
     <>
-      <div className="Machine-card">
+      <div className="Machine-card Machine-card--master">
         <span className="Machine-card__label">MASTER</span>
         {master.map((knob) => (
           <Knob key={knob.name} {...knob} />
         ))}
       </div>
-      <div className="Machine-card">
+      <div className="Machine-card Machine-card--fx">
         <span className="Machine-card__label">FX</span>
         {fx.map((knob) => (
           <Knob key={knob.name} {...knob} />
         ))}
       </div>
-      <div className="Machine-card">
+      <div className="Machine-card Machine-card--instrument">
         <span className="Machine-card__label">INSTRUMENT</span>
         <SelectBox />
       </div>

@@ -1,11 +1,11 @@
 import React from "react";
 
-const Topbar = ({ currentStep, seekTo }) => {
+const Topbar = ({ currentStep, seekTo, stepIndices }) => {
   return (
     <main className="Board-TopBar">
       <div className="Board-TopBar__channel">Channel</div>
       <div className="Board-TopBar__group">
-        {Array.from({ length: 16 }, (_, i) => (
+        {stepIndices.map((i) => (
           <div
             key={i}
             className={
