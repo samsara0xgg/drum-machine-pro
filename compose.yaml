@@ -1,0 +1,39 @@
+services:
+  db:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+    volumes:
+      # Runs once, on the first start with an empty data volume.
+      - ./server/db/setup.sql:/docker-entrypoint-initdb.d/setup.sql:ro
+      - db-data:/var/lib/mysql
+    healthcheck:
+      # TCP, not the socket: during first-start init MySQL runs a temporary
+      # server on the socket only, so this passes once the real server is up.
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "--silent"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+  api:
+    build: ./server
+    init: true
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_USER: drum_app
+      DB_PASSWORD: "Drum#2026" # must match server/db/setup.sql
+      DB_NAME: drum_machine
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    build: .
+    ports:
+      - "8088:80"
+    depends_on:
+      - api
+
+volumes:
+  db-data:

@@ -15,6 +15,15 @@ Deployed on Vercel and Railway (API + MySQL).
 - Library drawer: save patterns locally, load built-in grooves, or share any pattern
   as a short link (`/p/xxxxxxxx`)
 
+## Run with Docker
+
+Requires only Docker. Starts MySQL, the API, and the built frontend behind nginx.
+
+```
+docker compose up --build   # app on http://localhost:8088
+docker compose down         # stop; add -v to also wipe saved patterns
+```
+
 ## Run locally
 
 Requires Node and MySQL.
