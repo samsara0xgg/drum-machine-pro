@@ -315,6 +315,7 @@ const ContextProvider = ({ children }) => {
         deleteEntry,
         loadEntry,
         loadPreset,
+        hydrate,
         newMachine,
         notice,
         toast,

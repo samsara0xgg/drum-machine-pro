@@ -4,6 +4,8 @@ $Surface-00dp: #121212;
 $Primary-200: #d1f998;
 $Secondary-200: #b39ddb;
 $Mono: "DM Mono", "SF Mono", Menlo, monospace;
+$ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+$ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
 
 @mixin dp($overlay) {
   background-color: rgba($color: #ffffff, $alpha: $overlay);
@@ -1036,5 +1038,315 @@ li {
     .Board-Channel {
       grid-template-columns: 104px minmax(0, 1fr) 24px;
     }
+  }
+}
+
+// ---- Intro: power screen, boot sequence, module tour (Intro.component.jsx) ----
+
+// Powered off: the machine is a faint silhouette behind the power screen.
+.Machine.is-off {
+  opacity: 0.12;
+}
+
+// Boot timeline (ms): body on at 0, sections rise 80-400, screen flickers
+// on at 350, then a sweep writes the demo beat left to right, one column
+// every 60ms from 700. BOOT_MS in Intro.component.jsx waits for the last pad.
+.Machine.is-booting {
+  animation: boot-on 0.5s $ease-out;
+
+  > .Header,
+  > .Screen,
+  > .Machine-crow > *,
+  > .Board {
+    animation: boot-rise 0.4s $ease-out backwards;
+  }
+  > .Header {
+    animation-delay: 80ms;
+  }
+  > .Screen {
+    animation-delay: 140ms;
+  }
+  @for $i from 1 through 5 {
+    > .Machine-crow > :nth-child(#{$i}) {
+      animation-delay: #{160 + $i * 40}ms;
+    }
+  }
+  > .Board {
+    animation-delay: 400ms;
+  }
+
+  .Screen-main {
+    animation: boot-flicker 0.45s step-end 350ms backwards;
+  }
+  .Board-Channel__item:checked {
+    animation: boot-write 0.26s $ease-out backwards;
+  }
+  @for $i from 0 through 15 {
+    .Board-Channel__item[data-step="#{$i}"] {
+      animation-delay: #{700 + $i * 60}ms;
+    }
+    .Board-TopBar__label:nth-child(#{$i + 1}) .Board-TopBar__led {
+      animation: boot-led 0.3s ease-out #{700 + $i * 60}ms;
+    }
+  }
+}
+
+@keyframes boot-on {
+  from {
+    opacity: 0.12;
+    transform: scale(0.98);
+  }
+}
+@keyframes boot-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+// an LCD warming up: a few hard blinks, no fades
+@keyframes boot-flicker {
+  0% {
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.8;
+  }
+  35% {
+    opacity: 0.1;
+  }
+  55% {
+    opacity: 1;
+  }
+  70% {
+    opacity: 0.35;
+  }
+  85% {
+    opacity: 1;
+  }
+}
+// a lit pad starts unlit and pressed, then lands in its checked color
+@keyframes boot-write {
+  from {
+    background-color: rgba(255, 255, 255, 0.04);
+    transform: scale(0.8);
+  }
+}
+@keyframes boot-led {
+  30% {
+    background-color: $Primary-200;
+    box-shadow: 0 0 6px rgba(209, 249, 152, 0.45);
+  }
+}
+
+.Power {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 16px;
+  text-align: center;
+  background: radial-gradient(circle at 50% 45%, rgba(18, 18, 18, 0.5), rgba(18, 18, 18, 0.94) 60%);
+  transition: opacity 0.3s $ease-out;
+
+  &.is-leaving {
+    opacity: 0;
+    pointer-events: none;
+  }
+  &__brand {
+    font-size: 11px;
+    letter-spacing: 0.32em;
+    margin-bottom: 10px;
+    @include fontdp(0.5);
+  }
+  &__button {
+    position: relative;
+    width: 88px;
+    height: 88px;
+    border: none;
+    border-radius: 50%;
+    padding: 0;
+    background-color: #1d1d1d;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08), 0 6px 18px black;
+    color: $Primary-200;
+    cursor: pointer;
+    transition: transform 0.12s $ease-out;
+
+    &:active {
+      transform: scale(0.96);
+    }
+    &:focus-visible {
+      outline: 2px solid $Primary-200;
+      outline-offset: 10px;
+    }
+    // breathing ring: the one thing on screen asking to be pressed
+    &::after {
+      content: "";
+      position: absolute;
+      inset: -6px;
+      border-radius: 50%;
+      box-shadow: 0 0 0 2px $Primary-200, 0 0 18px rgba(209, 249, 152, 0.5);
+      opacity: 0.2;
+      animation: power-breathe 2.4s ease-in-out infinite;
+    }
+    svg {
+      width: 30px;
+      height: 30px;
+      display: block;
+      margin: auto;
+    }
+  }
+  &__label {
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 0.2em;
+    color: $Primary-200;
+    margin-top: 6px;
+  }
+  &__hint {
+    font-size: 12.5px;
+    @include fontdp(0.5);
+  }
+  &__skip {
+    margin-top: 10px;
+    border: none;
+    background: none;
+    font: inherit;
+    font-size: 12px;
+    text-decoration: underline;
+    @include fontdp(0.35);
+    cursor: pointer;
+
+    &:hover {
+      @include fontdp(0.7);
+    }
+  }
+}
+
+@keyframes power-breathe {
+  50% {
+    opacity: 0.9;
+  }
+}
+
+// Spotlight and card sit in page coordinates (absolute, placed from JS) and
+// never block clicks outside the card: the machine stays playable mid-tour.
+// Below the Library drawer (9/10) and MUI menus, above the sticky ruler (5).
+.Tour-spot {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 8;
+  pointer-events: none;
+  border-radius: 12px;
+  box-shadow: 0 0 0 2px $Primary-200, 0 0 0 9999px rgba(0, 0, 0, 0.6);
+  transition: transform 0.45s $ease-in-out, width 0.45s $ease-in-out,
+    height 0.45s $ease-in-out, opacity 0.2s $ease-out;
+  animation: tour-fade 0.3s $ease-out;
+
+  // welcome card: no module, the whole machine dims
+  &.is-empty {
+    box-shadow: 0 0 0 0 transparent, 0 0 0 9999px rgba(0, 0, 0, 0.6);
+  }
+}
+
+.Tour-card {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 8;
+  width: min(320px, calc(100vw - 32px));
+  padding: 16px 18px 14px;
+  background-color: #222222;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.7);
+  @include fontdp(0.87);
+  transition: opacity 0.2s $ease-out;
+  animation: tour-card 0.25s $ease-out;
+
+  &__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  &__title {
+    font-size: 11px;
+    font-weight: bold;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: $Primary-200;
+  }
+  &__count {
+    font-family: $Mono;
+    font-size: 11px;
+    @include fontdp(0.35);
+  }
+  &__text {
+    margin: 0;
+    font-size: 13.5px;
+    line-height: 1.5;
+  }
+  &__buttons {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 14px;
+  }
+  &__skip {
+    margin-right: auto;
+    padding: 0;
+    border: none;
+    background: none;
+    font: inherit;
+    font-size: 12px;
+    @include fontdp(0.4);
+    cursor: pointer;
+
+    &:hover {
+      @include fontdp(0.7);
+    }
+  }
+  &__next {
+    color: $Primary-200;
+  }
+}
+
+.Tour.is-leaving .Tour-spot,
+.Tour.is-leaving .Tour-card {
+  opacity: 0;
+}
+
+@keyframes tour-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes tour-card {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+// Reduced motion: the machine simply fades on; nothing moves or blinks.
+@media (prefers-reduced-motion: reduce) {
+  .Machine.is-booting {
+    animation: tour-fade 0.3s ease;
+  }
+  .Machine.is-booting *,
+  .Power__button::after {
+    animation: none !important;
+  }
+  .Tour-spot {
+    transition: opacity 0.2s ease;
+  }
+  .Tour-card {
+    animation: tour-fade 0.2s ease;
   }
 }
