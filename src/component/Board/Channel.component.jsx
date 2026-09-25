@@ -6,6 +6,7 @@ import { noteName } from "../../service/bass808";
 
 const Channel = ({
   channel,
+  silent,
   currentStep,
   paintStep,
   toggleFlag,
@@ -122,7 +123,7 @@ const Channel = ({
 
   return (
     <li ref={setNodeRef} style={sortableStyle}>
-      <div className="Board-Channel">
+      <div className={"Board-Channel" + (silent ? " is-silent" : "")}>
         {createChannelInfo()}
         <div className="Board-Channel__group">{createChannelItem()}</div>
         {createChannelDelete()}

@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
-import { DEFAULT_KIT, KITS, fitVoice, newChannel, newUid } from "./service/kits";
+import { DEFAULT_KIT, KITS, fitVoice, newChannel, newUid, sampleDef } from "./service/kits";
 import { createBass } from "./service/bass808";
 import { loadPattern } from "./service/api";
-import { filterHz, toLevel, toRoll } from "./service/groove";
+import { VELOCITY_GAIN, filterHz, toLevel, toRoll } from "./service/groove";
 
 const Context = React.createContext();
 
@@ -365,6 +365,36 @@ const ContextProvider = ({ children }) => {
   // should not re-render the app; consumers read it at play time.
   const buffersRef = useRef(new Map());
 
+  // Sounds one row's step at `time`: its sample, or its note on the 808
+  // voice, at the step's level; a roll splits `span` into evenly spaced hits.
+  // The scheduler plays every sounding row through it, and a pad painted
+  // while stopped auditions through it.
+  const playStep = (channel, step, time, span, { pitch, decay, glide }) => {
+    const def = sampleDef(channel);
+    const gain = def.gain * VELOCITY_GAIN[channel.steps[step]];
+    const roll = channel.rolls[step];
+    const buffer = buffersRef.current.get(def.sample);
+    if (!def.synth && !buffer) return; // still loading
+    for (let hit = 0; hit < roll; hit++) {
+      const at = time + (hit * span) / roll;
+      // a slide applies to the first hit of a roll, the rest restrike
+      if (def.synth) {
+        bass.play(at, channel.notes[step] + pitch, gain, {
+          decay,
+          glide: glide / 1000,
+          slide: hit === 0 && channel.slides[step] === 1,
+        });
+        continue;
+      }
+      const source = new AudioBufferSourceNode(audioCtx, { buffer });
+      // PITCH knob: one semitone doubles the rate every 12 steps.
+      source.playbackRate.value = 2 ** (pitch / 12);
+      const gainNode = new GainNode(audioCtx, { gain });
+      source.connect(gainNode).connect(fxIn);
+      source.start(at);
+    }
+  };
+
   return (
     <Context.Provider
       value={{
@@ -409,6 +439,7 @@ const ContextProvider = ({ children }) => {
         audioCtx,
         masterGain,
         buffersRef,
+        playStep,
         library,
         loadedId,
         drawerOpen,
