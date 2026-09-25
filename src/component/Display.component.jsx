@@ -2,7 +2,50 @@ import React, { useContext, useEffect, useRef, useState } from "react";
 import { Context } from "../Context";
 import { KITS, loadSample, sampleDef } from "../service/kits";
 import { ensureAudioReady } from "../service/audio";
-import { VELOCITY_GAIN, nextBar, swingDelay } from "../service/groove";
+import {
+  VELOCITY_GAIN,
+  filterHz,
+  filterLabel,
+  nextBar,
+  stepLength,
+  swingDelay,
+} from "../service/groove";
+
+// Live oscilloscope of the final mix, faint behind the screen's readouts.
+const Scope = ({ analyser, running }) => {
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    if (!running || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const data = new Uint8Array(analyser.fftSize);
+    let rafID;
+    const draw = () => {
+      const width = (canvas.width = canvas.clientWidth * devicePixelRatio);
+      const height = (canvas.height = canvas.clientHeight * devicePixelRatio);
+      analyser.getByteTimeDomainData(data);
+      ctx.lineWidth = 1.5 * devicePixelRatio;
+      ctx.strokeStyle = "rgba(209, 249, 152, 0.3)";
+      ctx.beginPath();
+      data.forEach((v, i) => {
+        const x = (i / (data.length - 1)) * width;
+        const y = height / 2 + ((v - 128) / 128) * (height / 2);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+      rafID = requestAnimationFrame(draw);
+    };
+    rafID = requestAnimationFrame(draw);
+    return () => {
+      cancelAnimationFrame(rafID);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    };
+  }, [analyser, running]);
+
+  return <canvas ref={canvasRef} className="Screen-scope" aria-hidden="true" />;
+};
 
 const Display = () => {
   const {
@@ -23,6 +66,10 @@ const Display = () => {
     showPattern,
     pitch,
     swing,
+    setFilter,
+    filterNodes,
+    analyser,
+    flashParam,
     fxIn,
     paramFlash,
     bpmFlash,
@@ -107,9 +154,12 @@ const Display = () => {
     let nextNoteTime = audioCtx.currentTime;
     let timerID;
 
-    // Schedule every active channel of one pattern for this step
-    const scheduleNote = (channels, beatNumber, time) => {
+    // Schedule every active channel of one pattern for this step; a roll
+    // splits the step's span into evenly spaced hits. Returns the loudest
+    // kick level sounded, which drives the bezel pulse.
+    const scheduleNote = (channels, beatNumber, time, span) => {
       const anySolo = channels.some((c) => c.solo);
+      let kick = 0;
 
       channels.forEach((channel) => {
         const level = channel.steps[beatNumber];
@@ -119,16 +169,31 @@ const Display = () => {
         const def = sampleDef(channel);
         const buffer = buffersRef.current.get(def.sample);
         if (!buffer) return; // still loading
+        if (def.id.startsWith("Bass")) kick = Math.max(kick, level);
 
-        const source = new AudioBufferSourceNode(audioCtx, { buffer });
-        // PITCH knob: one semitone doubles the rate every 12 steps.
-        source.playbackRate.value = 2 ** (pitchRef.current / 12);
-        const gainNode = new GainNode(audioCtx, { gain: def.gain * VELOCITY_GAIN[level] });
-        source.connect(gainNode);
-        gainNode.connect(fxIn);
-        source.start(time);
+        const roll = channel.rolls[beatNumber];
+        for (let hit = 0; hit < roll; hit++) {
+          const source = new AudioBufferSourceNode(audioCtx, { buffer });
+          // PITCH knob: one semitone doubles the rate every 12 steps.
+          source.playbackRate.value = 2 ** (pitchRef.current / 12);
+          const gainNode = new GainNode(audioCtx, { gain: def.gain * VELOCITY_GAIN[level] });
+          source.connect(gainNode);
+          gainNode.connect(fxIn);
+          source.start(time + (hit * span) / roll);
+        }
       });
+      return kick;
     };
+
+    // Kicks flash a glow around the machine, as loud as the hit.
+    const glow = document.querySelector(".Machine-glow");
+    const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const pulse = (level) =>
+      glow?.animate([{ opacity: [0, 0.35, 0.6, 1][level] }, { opacity: 0 }], {
+        duration: 380,
+        easing: "cubic-bezier(0.23, 1, 0.32, 1)",
+      });
+    let shownFilter;
 
     // Notes are scheduled up to 0.1s before they sound, so the playhead can't
     // follow the scheduler directly. Each scheduled step goes into a queue and
@@ -137,11 +202,17 @@ const Display = () => {
     let rafID;
     const draw = () => {
       while (drawQueue.length && drawQueue[0].time <= audioCtx.currentTime) {
-        const { step, pattern } = drawQueue.shift();
+        const { step, pattern, kick, filter } = drawQueue.shift();
         setCurrentStep(step);
-        // A song bar lights its pad as it starts sounding, unless the song
-        // was stopped by a hand edit in the meantime.
+        if (kick && !still) pulse(kick);
+        // A song bar lights its pad and turns the FILTER knob as it sounds,
+        // unless the song was stopped by a hand edit in the meantime.
         if (pattern !== undefined && songRef.current) showPattern(pattern);
+        if (filter !== undefined && songRef.current && filter !== shownFilter) {
+          shownFilter = filter;
+          setFilter(filter);
+          flashParam("FILTER", filterLabel(filter));
+        }
       }
       rafID = requestAnimationFrame(draw);
     };
@@ -155,16 +226,33 @@ const Display = () => {
       // nextNoteTime stays on the straight grid; swing only delays when an
       // odd step sounds (and lights), so the grid never drifts.
       // While a song plays, it picks the pattern for each bar instead of the
-      // pad the user selected.
+      // pad the user selected, and ramps the filter across bars that sweep.
       while (nextNoteTime < audioCtx.currentTime + scheduleAheadTime) {
         const step = nextStepRef.current;
         const song = songRef.current;
-        const pattern = song ? song.order[song.pos] : patternNumRef.current;
+        const bar = song ? song.bars[song.pos] : null;
+        const pattern = bar ? bar.pad : patternNumRef.current;
         // 16 steps per bar, 4 steps per beat
         const secondsPer16th = 60.0 / bpmRef.current / 4;
         const time = nextNoteTime + swingDelay(step, secondsPer16th, swingRef.current);
-        scheduleNote(patternsRef.current[pattern].channels, step, time);
-        drawQueue.push({ step, time, pattern: song ? pattern : undefined });
+        const span = stepLength(step, secondsPer16th, swingRef.current);
+        const kick = scheduleNote(patternsRef.current[pattern].channels, step, time, span);
+        let filter;
+        if (bar?.filter) {
+          const [from, to] = bar.filter;
+          filter = Math.round(from + ((to - from) * step) / 16);
+          if (step === 0) {
+            const [start, end] = [filterHz(from), filterHz(to)];
+            for (const type of ["lowpass", "highpass"]) {
+              const param = filterNodes[type].frequency;
+              param.setValueAtTime(start[type], time);
+              if (end[type] !== start[type]) {
+                param.exponentialRampToValueAtTime(end[type], time + 16 * secondsPer16th);
+              }
+            }
+          }
+        }
+        drawQueue.push({ step, time, kick, filter, pattern: song ? pattern : undefined });
         nextNoteTime += secondsPer16th;
         nextStepRef.current = (step + 1) % 16;
         if (song && nextStepRef.current === 0) song.pos = nextBar(song, song.pos);
@@ -179,10 +267,14 @@ const Display = () => {
       clearTimeout(timerID);
       cancelAnimationFrame(rafID);
     };
-  }, [started, audioCtx, fxIn, buffersRef, setCurrentStep, nextStepRef, songRef, showPattern]);
+    // flashParam is recreated every render but only wraps a stable setter,
+    // so it stays out of the deps (listing it would restart the clock).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [started, audioCtx, fxIn, buffersRef, setCurrentStep, nextStepRef, songRef, showPattern, setFilter, filterNodes]);
 
   return (
     <div className="Screen">
+      <Scope analyser={analyser} running={started} />
       <div className={"Screen-param" + (paramLive ? " is-live" : "")}>
         <div className="Screen-param__name">{paramFlash?.name}</div>
         <div className="Screen-param__value">{paramFlash?.text}</div>

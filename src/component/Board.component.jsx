@@ -20,6 +20,25 @@ import { Context } from "../Context";
 import { pageForStep, stepsForPage } from "../service/mobile";
 import { paint } from "../service/groove";
 
+// One brush row: the value new pads are painted with.
+const Brush = ({ label, options, value, onChange }) => (
+  <div className="Board-Brush" role="group" aria-label={label}>
+    <span className="Board-Brush__label">{label}</span>
+    {options.map(([v, text]) => (
+      <button
+        key={v}
+        className={"Board-Brush__button" + (v === value ? " is-active" : "")}
+        data-kind={label}
+        data-value={v}
+        aria-pressed={v === value}
+        onClick={() => onChange(v)}
+      >
+        {text}
+      </button>
+    ))}
+  </div>
+);
+
 const Board = () => {
   const {
     audioCtx,
@@ -34,8 +53,10 @@ const Board = () => {
   } = useContext(Context);
 
   const isMobile = useMediaQuery("(max-width:600px)");
-  // Velocity brush: the level new hits are drawn at (1 soft, 2 mid, 3 hard).
+  // Brushes: clicked pads are drawn at this level (1 soft, 2 mid, 3 hard)
+  // and roll (hits per step, 1-4).
   const [brush, setBrush] = useState(2);
+  const [rollBrush, setRollBrush] = useState(1);
   const [mobilePage, setMobilePage] = useState(0);
 
   // Follow the sounding group just four times per bar, not on every step.
@@ -94,7 +115,11 @@ const Board = () => {
     updateChannels((rows) =>
       rows.map((c) =>
         c.uid === uid
-          ? { ...c, steps: c.steps.map((level, i) => (i === step ? paint(level, brush) : level)) }
+          ? (() => {
+              const [level, roll] = paint(c.steps[step], c.rolls[step], brush, rollBrush);
+              const set = (list, value) => list.map((v, i) => (i === step ? value : v));
+              return { ...c, steps: set(c.steps, level), rolls: set(c.rolls, roll) };
+            })()
           : c
       )
     );
@@ -131,14 +156,22 @@ const Board = () => {
           </button>
         ))}
       </div>
-      <div id="scroll">
-        <TopBar
-          currentStep={currentStep}
-          seekTo={seekTo}
-          stepIndices={visibleSteps}
-          brush={brush}
-          setBrush={setBrush}
+      <div className="Board-tools">
+        <Brush
+          label="HIT"
+          options={[[1, "SOFT"], [2, "MID"], [3, "HARD"]]}
+          value={brush}
+          onChange={setBrush}
         />
+        <Brush
+          label="ROLL"
+          options={[[1, "1"], [2, "2"], [3, "3"], [4, "4"]]}
+          value={rollBrush}
+          onChange={setRollBrush}
+        />
+      </div>
+      <div id="scroll">
+        <TopBar currentStep={currentStep} seekTo={seekTo} stepIndices={visibleSteps} />
         <DndContext collisionDetection={closestCenter} onDragEnd={onDragEnd}>
           <SortableContext
             items={channelIds}

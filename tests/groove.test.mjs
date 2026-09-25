@@ -1,41 +1,66 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { nextBar, paint, swingDelay, toLevel } from "../src/service/groove.js";
+import {
+  filterHz,
+  filterLabel,
+  nextBar,
+  paint,
+  stepLength,
+  swingDelay,
+  toLevel,
+  toRoll,
+} from "../src/service/groove.js";
 import { DEMO_SONG } from "../src/service/presets.js";
 
-test("old boolean steps load as mid hits", () => {
+test("old snapshots load: boolean hits become mid, missing rolls fire once", () => {
   assert.deepEqual([true, false, 0, 1, 3].map(toLevel), [2, 0, 0, 1, 3]);
+  assert.deepEqual([undefined, 0, 2, 4, 5].map(toRoll), [1, 1, 2, 4, 1]);
 });
 
-test("the brush draws its level and clears only its own level", () => {
-  assert.equal(paint(0, 3), 3);
-  assert.equal(paint(1, 3), 3);
-  assert.equal(paint(3, 3), 0);
+test("the brushes paint level and roll, and clear only an exact match", () => {
+  assert.deepEqual(paint(0, 1, 3, 2), [3, 2]);
+  assert.deepEqual(paint(3, 1, 3, 2), [3, 2]);
+  assert.deepEqual(paint(3, 2, 3, 2), [0, 1]);
 });
 
-test("swing delays only odd 16ths, up to half a 16th at 75%", () => {
+test("swing delays only odd 16ths, and each pair of steps keeps its length", () => {
   assert.equal(swingDelay(1, 0.2, 50), 0);
   assert.equal(swingDelay(2, 0.2, 75), 0);
   assert.equal(swingDelay(3, 0.2, 75), 0.1);
+  assert.equal(stepLength(2, 0.2, 75), 0.30000000000000004);
+  assert.equal(stepLength(3, 0.2, 75), 0.1);
+  assert.equal(stepLength(3, 0.2, 50), 0.2);
+});
+
+test("the filter knob is open at 0, low-pass left, high-pass right", () => {
+  assert.deepEqual(filterHz(0), { lowpass: 20000, highpass: 20 });
+  assert.equal(Math.round(filterHz(-100).lowpass), 100);
+  assert.equal(Math.round(filterHz(100).highpass), 8000);
+  assert.equal(filterLabel(0), "OFF");
+  assert.equal(filterLabel(-100), "LP 100 HZ");
+  assert.equal(filterLabel(100), "HP 8.0 KHZ");
 });
 
 test("the demo song walks its bars, then loops back to the groove", () => {
-  const { order, loopFrom } = DEMO_SONG;
-  const bars = [0];
-  for (let i = 0; i < order.length + 2; i++) bars.push(nextBar(DEMO_SONG, bars.at(-1)));
-  assert.deepEqual(bars.slice(0, order.length), order.map((_, i) => i));
-  assert.deepEqual(bars.slice(order.length), [loopFrom, loopFrom + 1, loopFrom + 2]);
+  const { bars, loopFrom } = DEMO_SONG;
+  const walk = [0];
+  for (let i = 0; i < bars.length + 2; i++) walk.push(nextBar(DEMO_SONG, walk.at(-1)));
+  assert.deepEqual(walk.slice(0, bars.length), bars.map((_, i) => i));
+  assert.deepEqual(walk.slice(bars.length), [loopFrom, loopFrom + 1, loopFrom + 2]);
 });
 
-test("every demo tab is 16 steps of valid levels on a real pad", () => {
-  const { payload, order } = DEMO_SONG;
+test("every demo tab is 16 steps of valid levels and rolls on a real pad", () => {
+  const { payload, bars } = DEMO_SONG;
   assert.equal(payload.version, 2);
   for (const pattern of payload.patterns) {
     for (const row of pattern.channels) {
       assert.equal(row.steps.length, 16);
+      assert.equal(row.rolls.length, 16);
       assert.ok(row.steps.every((s) => Number.isInteger(s) && s >= 0 && s <= 3));
+      assert.ok(row.rolls.every((r) => Number.isInteger(r) && r >= 1 && r <= 4));
     }
   }
-  assert.ok(order.every((pad) => pad < payload.patterns.length));
+  assert.ok(bars.every(({ pad }) => pad < payload.patterns.length));
+  assert.equal(bars[0].filter[0], payload.filter, "the song starts where the payload's knob is");
 });

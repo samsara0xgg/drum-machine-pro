@@ -91,6 +91,7 @@ export const newChannel = (kit, slot) => ({
   kit,
   slot,
   steps: Array(STEP_COUNT).fill(0),
+  rolls: Array(STEP_COUNT).fill(1),
   muted: false,
   solo: false,
 });

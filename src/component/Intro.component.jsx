@@ -11,8 +11,8 @@ import { ensureAudioReady } from "../service/audio";
 const SEEN_KEY = "drum-machine-intro-seen";
 // Matches the boot timeline in App.scss: the last pad lands at 700 + 15 * 60 + 260 ms.
 const BOOT_MS = 1900;
-// Let one bar of the demo play before the tour dims the machine.
-const BAR_MS = (60 / DEMO_SONG.payload.bpm) * 4 * 1000;
+// Let the demo's two intro bars play out before the tour dims the machine.
+const INTRO_MS = 2 * (60 / DEMO_SONG.payload.bpm) * 4 * 1000;
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -40,19 +40,19 @@ const STEPS = [
     target: ".Board",
     place: "above",
     title: "Sequencer",
-    text: "The heart of the machine. Each row is one drum, each column a 16th note, four columns to a beat. Lit pads play. Pick SOFT, MID or HARD at the top left, then click pads to draw hits that hard; clicking a pad at the same strength clears it. Per row: click the name to change the sound, the dots mute (green) or solo (red), drag the handle to reorder.",
-    mobileText: "The heart of the machine. Each row is one drum, each column a 16th note. Lit pads play. Pick SOFT, MID or HARD at the top left, then tap pads to draw hits that hard; tapping at the same strength clears one. The buttons above show the 16 steps four at a time.",
+    text: "The heart of the machine. Each row is one drum, each column a 16th note. Lit pads play. The brushes above set how new pads play: HIT soft, mid or hard; ROLL fires a pad 2 to 4 times in its step (a sliced pad), for trap hat rolls. Per row: click the name to change the sound, the dots mute (green) or solo (red).",
+    mobileText: "The heart of the machine. Each row is one drum, each column a 16th note. Lit pads play. The brushes above it set how new pads play: HIT picks soft, mid or hard, ROLL fires a pad 2 to 4 times within its step. Tapping a pad that already matches both clears it. The buttons above show the 16 steps four at a time.",
   },
   {
     target: ".Machine-card--master",
     title: "Master",
-    text: "TEMPO sets the speed in BPM, VOL the overall level. SWING pushes every second 16th late for a laid-back groove: 50% is straight, around 57% is this demo. Drag a knob up or right to turn it; double-click to reset.",
-    mobileText: "TEMPO sets the speed in BPM, VOL the overall level. SWING pushes every second 16th late for a laid-back groove: 50% is straight, around 57% is this demo.",
+    text: "TEMPO sets the speed in BPM, VOL the overall level. SWING pushes every second 16th late for a laid-back groove: 50% is straight, hip hop often sits at 55-60%. Drag a knob up or right to turn it; double-click to reset.",
+    mobileText: "TEMPO sets the speed in BPM, VOL the overall level. SWING pushes every second 16th late for a laid-back groove: 50% is straight, hip hop often sits at 55-60%.",
   },
   {
     target: ".Machine-card--fx",
     title: "FX",
-    text: "Effects on the whole mix: PITCH tunes every sound up or down in semitones, PAN moves it left or right, REVERB puts it in a room.",
+    text: "Effects on the whole mix: PITCH tunes every sound up or down in semitones, PAN moves it left or right, REVERB puts it in a room. FILTER turned left muffles the mix, turned right thins it out: the demo's intro and build-up are this knob moving.",
   },
   {
     target: ".Machine-card--instrument",
@@ -62,7 +62,7 @@ const STEPS = [
   {
     target: ".Machine-card--pattern",
     title: "Patterns",
-    text: "12 pattern slots, each with its own beat and kit. The demo is a song across pads 1 to 5: intro, groove, variation, fill, chorus. Click a pad (or edit the grid) and the song stays on that section.",
+    text: "12 pattern slots, each with its own beat and kit. The demo is a song across pads 1 to 6: intro, groove, two build-up bars, chorus and its fill. Click a pad (or edit the grid) and the song stays on that section.",
   },
   {
     target: ".Header",
@@ -210,7 +210,7 @@ const Intro = ({ phase, setPhase }) => {
     const audio = ensureAudioReady(audioCtx);
     markSeen();
     hydrate(DEMO_SONG.payload);
-    songRef.current = { order: DEMO_SONG.order, loopFrom: DEMO_SONG.loopFrom, pos: 0 };
+    songRef.current = { bars: DEMO_SONG.bars, loopFrom: DEMO_SONG.loopFrom, pos: 0 };
     setPhase("boot");
     const urls = new Set(
       DEMO_SONG.payload.patterns.flatMap((p) => p.channels.map((c) => sampleDef(c).sample))
@@ -225,7 +225,7 @@ const Intro = ({ phase, setPhase }) => {
       toast(error?.message || "Could not load audio. Tap play to try again.");
     }
     setPhase("demo");
-    await wait(BAR_MS);
+    await wait(INTRO_MS);
     setPhase("tour");
   };
 
@@ -247,7 +247,7 @@ const Intro = ({ phase, setPhase }) => {
         </svg>
       </button>
       <div className="Power__label">POWER ON</div>
-      <div className="Power__hint">Plays a short 808 boom bap song · sound on</div>
+      <div className="Power__hint">Plays a short 808 trap beat · sound on</div>
       <button className="Power__skip" onClick={skip}>
         Skip intro
       </button>

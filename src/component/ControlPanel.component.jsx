@@ -2,6 +2,7 @@ import React, { useContext } from "react";
 import Knob from "./ControlPanel/Knob.component";
 import SelectBox from "./ControlPanel/SelectBox.component";
 import { Context } from "../Context";
+import { filterLabel } from "../service/groove";
 
 const ControlPanel = () => {
   const {
@@ -17,6 +18,8 @@ const ControlPanel = () => {
     setReverb,
     swing,
     setSwing,
+    filter,
+    setFilter,
     flashParam,
     flashBpm,
   } = useContext(Context);
@@ -40,6 +43,8 @@ const ControlPanel = () => {
       } },
     { name: "REVERB", min: 0, max: 1, step: 0.01, defaultValue: 0, value: reverb,
       onChange: (v) => { setReverb(v); flashParam("REVERB", Math.round(v * 100) + "%"); } },
+    { name: "FILTER", min: -100, max: 100, step: 1, defaultValue: 0, value: filter,
+      onChange: (v) => { setFilter(v); flashParam("FILTER", filterLabel(v)); } },
   ];
 
   return (

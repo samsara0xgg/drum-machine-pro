@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { DEFAULT_KIT, KITS, newChannel, newUid } from "./service/kits";
 import { loadPattern } from "./service/api";
-import { toLevel } from "./service/groove";
+import { filterHz, toLevel, toRoll } from "./service/groove";
 
 const Context = React.createContext();
 
@@ -16,8 +16,18 @@ const limiter = new DynamicsCompressorNode(audioCtx, {
   attack: 0.002,
   release: 0.1,
 });
-masterGain.connect(limiter);
-limiter.connect(audioCtx.destination);
+// DJ filter on the whole mix (FILTER knob, and the demo song's sweeps).
+// Q is a feel value: a little resonance makes sweeps audible.
+const lowpass = new BiquadFilterNode(audioCtx, { type: "lowpass", frequency: 20000, Q: 1.5 });
+const highpass = new BiquadFilterNode(audioCtx, { type: "highpass", frequency: 20, Q: 1.5 });
+// Taps the final output for the screen's oscilloscope; passes audio through.
+const analyser = new AnalyserNode(audioCtx, { fftSize: 1024 });
+const filterNodes = { lowpass, highpass };
+masterGain.connect(lowpass);
+lowpass.connect(highpass);
+highpass.connect(limiter);
+limiter.connect(analyser);
+analyser.connect(audioCtx.destination);
 
 // Reverb impulse: two seconds of decaying noise, generated in code.
 const makeImpulse = (ctx, seconds = 2, decay = 3) => {
@@ -83,13 +93,19 @@ const ContextProvider = ({ children }) => {
   // patterns bar by bar, null otherwise. Every hand edit or pattern pick goes
   // through the two setters below and ends it, so the section being touched
   // stays put. The scheduler itself moves the display with showPattern.
+  // Ending the song also lets go of its filter sweep.
   const songRef = useRef(null);
-  const setPatterns = (next) => {
+  const stopSong = () => {
+    if (!songRef.current) return;
     songRef.current = null;
+    setFilter(0);
+  };
+  const setPatterns = (next) => {
+    stopSong();
     setPatternsState(next);
   };
   const setPatternNum = (n) => {
-    songRef.current = null;
+    stopSong();
     showPattern(n);
   };
   // Step the playhead is on right now (-1 = stopped); driven by the audio
@@ -104,6 +120,20 @@ const ContextProvider = ({ children }) => {
   const [pan, setPan] = useState(0);
   const [reverb, setReverb] = useState(0);
   const [swing, setSwing] = useState(50);
+  const [filter, setFilter] = useState(0);
+
+  // While the song plays it owns the filter: the scheduler ramps it sample-
+  // accurately and this state only moves the knob. Otherwise glide to the
+  // knob, dropping any ramp the song left scheduled.
+  useEffect(() => {
+    if (songRef.current) return;
+    const hz = filterHz(filter);
+    const now = audioCtx.currentTime;
+    for (const [node, target] of [[lowpass, hz.lowpass], [highpass, hz.highpass]]) {
+      node.frequency.cancelScheduledValues(now);
+      node.frequency.setTargetAtTime(target, now, 0.02);
+    }
+  }, [filter]);
 
   useEffect(() => {
     panNode.pan.value = pan;
@@ -186,6 +216,7 @@ const ContextProvider = ({ children }) => {
     version: 2,
     bpm,
     swing,
+    filter,
     pitch,
     pan,
     reverb,
@@ -243,6 +274,7 @@ const ContextProvider = ({ children }) => {
     setPan(0);
     setReverb(0);
     setSwing(50);
+    setFilter(0);
     setLoadedId(null);
     toast("Reset to a blank machine");
   };
@@ -258,7 +290,8 @@ const ContextProvider = ({ children }) => {
   // Replace the whole machine state with a shared snapshot. Fields are picked
   // explicitly (junk dropped), and every row gets a fresh uid — uids minted in
   // the sharer's session would collide with this session's counter.
-  // Version 1 stored steps as booleans; version 2 stores levels and swing.
+  // Version 1 stored steps as booleans; version 2 stores levels, rolls
+  // (optional), swing and filter.
   const hydrate = (payload) => {
     if (!payload || (payload.version !== 1 && payload.version !== 2)) return false;
     setPatterns(
@@ -269,6 +302,7 @@ const ContextProvider = ({ children }) => {
           kit: c.kit,
           slot: c.slot,
           steps: c.steps.map(toLevel),
+          rolls: Array.isArray(c.rolls) ? c.rolls.map(toRoll) : Array(16).fill(1),
           muted: c.muted,
           solo: c.solo,
         })),
@@ -284,6 +318,7 @@ const ContextProvider = ({ children }) => {
     setPan(num(payload.pan, -1, 1, 0));
     setReverb(num(payload.reverb, 0, 1, 0));
     setSwing(num(payload.swing, 50, 75, 50));
+    setFilter(num(payload.filter, -100, 100, 0));
     return true;
   };
 
@@ -331,6 +366,10 @@ const ContextProvider = ({ children }) => {
         setReverb,
         swing,
         setSwing,
+        filter,
+        setFilter,
+        filterNodes,
+        analyser,
         fxIn,
         started,
         setStarted,

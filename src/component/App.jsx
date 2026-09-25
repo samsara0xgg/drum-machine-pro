@@ -41,6 +41,7 @@ const App = () => {
           <Pattern />
         </div>
         <Board />
+        <div className="Machine-glow" aria-hidden="true"></div>
       </div>
       <Library />
       <Intro phase={intro} setPhase={setIntro} />

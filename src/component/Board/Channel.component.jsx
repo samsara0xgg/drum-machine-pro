@@ -90,6 +90,7 @@ const Channel = ({
         key={`clip${i}`}
         checked={steps[i] > 0}
         data-level={steps[i]}
+        data-roll={channel.rolls[i]}
         type="checkbox"
         className={
           "Board-Channel__item" +

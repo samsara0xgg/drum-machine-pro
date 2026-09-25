@@ -25,6 +25,10 @@ const newSlug = customAlphabet(
 // Version 1 stored steps as booleans, version 2 as velocity levels 0-3.
 const isStep = (s) =>
   typeof s === "boolean" || (Number.isInteger(s) && s >= 0 && s <= 3);
+// Rolls (hits per step) are optional; older snapshots have none.
+const isRolls = (r) =>
+  r === undefined ||
+  (Array.isArray(r) && r.length === 16 && r.every((n) => Number.isInteger(n) && n >= 1 && n <= 4));
 const isChannel = (c) =>
   typeof c === "object" &&
   c !== null &&
@@ -36,6 +40,7 @@ const isChannel = (c) =>
   Array.isArray(c.steps) &&
   c.steps.length === 16 &&
   c.steps.every(isStep) &&
+  isRolls(c.rolls) &&
   typeof c.muted === "boolean" &&
   typeof c.solo === "boolean";
 const isPattern = (p) =>

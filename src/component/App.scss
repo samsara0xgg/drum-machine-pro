@@ -1,3 +1,4 @@
+@use "sass:math";
 @import url("https://fonts.googleapis.com/css2?family=PT+Sans:wght@400;700&family=DM+Mono:wght@400;500&display=swap");
 
 $Surface-00dp: #121212;
@@ -56,6 +57,17 @@ body {
   display: flex;
   flex-direction: column;
   gap: 14px;
+  position: relative;
+
+  // kick pulse: Display fades this in and out with each kick
+  &-glow {
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    pointer-events: none;
+    opacity: 0;
+    box-shadow: 0 0 0 1px rgba(209, 249, 152, 0.55), 0 0 36px 2px rgba(209, 249, 152, 0.22);
+  }
 
   // control row: knobs card + instrument card + spacer + pattern pads
   &-crow {
@@ -155,6 +167,9 @@ body {
 
 // black screen strip embedded at the top of the bezel
 .Screen {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   background-color: black;
   border-radius: 8px;
   box-shadow: 0 1px 2px black;
@@ -163,6 +178,15 @@ body {
   gap: 18px;
   padding: 10px 20px;
   min-height: 62px;
+
+  // live oscilloscope, drawn behind the readouts while playing
+  &-scope {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    width: 100%;
+    height: 100%;
+  }
 
   // Part 1 (left): the last param touched; fully dark when idle.
   // Same width as the right zone, so Part 2 sits exactly centered.
@@ -500,6 +524,16 @@ body {
       &:checked[data-level="3"] {
         box-shadow: inset 0 0 0 2px #f6ffe9, 0 1px 2px black;
       }
+      // rolls: a pad firing N times is cut into N slices
+      @for $n from 2 through 4 {
+        &:checked[data-roll="#{$n}"] {
+          background-image: repeating-linear-gradient(
+            90deg,
+            transparent 0 calc(#{math.div(100%, $n)} - 1.5px),
+            rgba(26, 26, 26, 0.55) calc(#{math.div(100%, $n)} - 1.5px) calc(#{math.div(100%, $n)})
+          );
+        }
+      }
 
       &:focus {
         outline: none !important;
@@ -597,17 +631,33 @@ body {
   min-width: 890px;
 }
 
-// Velocity brush in the ruler's first cell, in the pattern-pad language;
-// each swatch shows how its hits look on the grid.
+// Brushes above the grid, in the pattern-pad language: HIT sets how hard
+// clicked pads play (each swatch shows how that level looks on the grid),
+// ROLL how many times a pad fires within its step.
+.Board-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  margin-bottom: 10px;
+}
 .Board-Brush {
   display: flex;
   align-items: center;
   gap: 4px;
 
+  &__label {
+    margin-right: 4px;
+    font-size: 9px;
+    font-weight: bold;
+    letter-spacing: 0.14em;
+    @include fontdp(0.5);
+  }
   &__button {
     display: flex;
     align-items: center;
     gap: 5px;
+    min-width: 28px;
+    justify-content: center;
     padding: 5px 7px;
     border: none;
     border-radius: 5px;
@@ -619,17 +669,17 @@ body {
     @include fontdp(0.5);
     cursor: pointer;
 
-    &::before {
+    &[data-kind="HIT"]::before {
       content: "";
       width: 8px;
       height: 8px;
       border-radius: 2px;
       background-color: $Primary-200;
     }
-    &[data-level="1"]::before {
+    &[data-kind="HIT"][data-value="1"]::before {
       background-color: rgba(209, 249, 152, 0.4);
     }
-    &[data-level="3"]::before {
+    &[data-kind="HIT"][data-value="3"]::before {
       box-shadow: inset 0 0 0 1.5px #f6ffe9;
     }
     &.is-active {
@@ -1027,18 +1077,11 @@ li {
     }
   }
 
-  .Board-Brush {
-    gap: 3px;
-
-    &__button {
-      padding: 6px 4px;
-      font-size: 9px;
-      letter-spacing: 0;
-
-      &::before {
-        display: none;
-      }
-    }
+  .Board-tools {
+    gap: 8px 14px;
+  }
+  .Board-Brush__button {
+    min-height: 36px;
   }
 
   .Board-Channel {
