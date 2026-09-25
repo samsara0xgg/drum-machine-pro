@@ -82,7 +82,9 @@ const PAD = 8; // spotlight margin around the module
 const GAP = 12; // spotlight to card
 
 // Dims the page except one module, with a card explaining it. Both are
-// absolutely positioned in page coordinates, so scrolling never moves them.
+// absolutely positioned in page coordinates, so scrolling never moves them
+// off their module. Phones pin the card instead: fixed at the spot on screen
+// it first lands on, so it stays in view while the page scrolls under it.
 const Tour = ({ onClose }) => {
   const [index, setIndex] = useState(0);
   const [leaving, setLeaving] = useState(false);
@@ -104,6 +106,7 @@ const Tour = ({ onClose }) => {
   useLayoutEffect(() => {
     const spot = spotRef.current;
     const card = cardRef.current;
+    let pinned = null; // phones: the card's fixed { left, top } on screen
     const place = () => {
       const x = window.scrollX;
       const y = window.scrollY;
@@ -134,26 +137,40 @@ const Tour = ({ onClose }) => {
         : step.place === "above"
         ? box.top - GAP - ch
         : box.top + box.height + GAP;
-      card.style.left = `${left}px`;
-      card.style.top = `${top}px`;
-      return { top: Math.min(box.top, top), bottom: Math.max(box.top + box.height, top + ch) };
+      const at = pinned ?? { left, top };
+      card.style.left = `${at.left}px`;
+      card.style.top = `${at.top}px`;
+      return {
+        card: { left, top },
+        top: Math.min(box.top, top),
+        bottom: Math.max(box.top + box.height, top + ch),
+      };
     };
 
     // Bring the module and its card into view together.
-    const { top, bottom } = place();
-    const y = window.scrollY;
+    const { card: at, top, bottom } = place();
     const vh = window.innerHeight;
+    let y = window.scrollY;
     if (top - 16 < y || bottom + 16 > y + vh) {
       const span = bottom - top;
-      window.scrollTo({
-        top: span + 32 > vh ? top - 16 : top - (vh - span) / 2,
-        behavior: reduce ? "auto" : "smooth",
-      });
+      const target = span + 32 > vh ? top - 16 : top - (vh - span) / 2;
+      // where the scroll lands: the page can't scroll past either end
+      y = Math.max(0, Math.min(target, document.documentElement.scrollHeight - vh));
+      window.scrollTo({ top: y, behavior: reduce ? "auto" : "smooth" });
+    }
+    if (mobile) {
+      pinned = {
+        left: at.left - window.scrollX,
+        top: Math.min(Math.max(16, at.top - y), vh - 16 - card.offsetHeight),
+      };
+      place();
     }
     nextRef.current.focus({ preventScroll: true });
 
-    // ponytail: re-places on window resize only; a module that changes size
-    // on its own mid-step (e.g. a row added) leaves the spotlight stale until Next.
+    // ponytail: re-places on window resize only (iOS also fires it as its
+    // toolbar grows and shrinks mid-scroll, which leaves a pinned card put);
+    // a module that changes size on its own mid-step (e.g. a row added)
+    // leaves the spotlight stale until Next.
     window.addEventListener("resize", place);
     return () => window.removeEventListener("resize", place);
   }, [index, mobile, reduce, step]);

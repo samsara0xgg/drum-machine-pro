@@ -992,7 +992,8 @@ li {
       min-height: 44px;
       padding: 8px 10px;
     }
-    &-button:nth-of-type(n + 3) {
+    // only the header's own: the tour card's NEXT is also a third button
+    > .Header-button:nth-of-type(n + 3) {
       display: none;
     }
   }
@@ -1441,6 +1442,7 @@ li {
 
 // Spotlight and card sit in page coordinates (absolute, placed from JS) and
 // never block clicks outside the card: the machine stays playable mid-tour.
+// On phones the card is fixed instead (below).
 // Below the Library drawer (9/10) and MUI menus, above the sticky ruler (5).
 .Tour-spot {
   position: absolute;
@@ -1521,6 +1523,14 @@ li {
   }
   &__next {
     color: $Primary-200;
+  }
+}
+
+// Phones pin the card where it lands (Intro.component.jsx), so it stays on
+// screen while the page scrolls under it. Same breakpoint as the JS.
+@media (max-width: 600px) {
+  .Tour-card {
+    position: fixed;
   }
 }
 
