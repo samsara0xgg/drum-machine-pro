@@ -1,9 +1,10 @@
-// Built-in Library grooves. Each payload is a full v1 snapshot, same shape as a
+// Built-in Library grooves. Each payload is a full v2 snapshot, same shape as a
 // share link, so loading one goes through the same hydrate() as /p/:slug.
-import { STEP_COUNT } from "./kits";
+import { STEP_COUNT } from "./kits.js";
 
-// Turn a list of step numbers into the bool[16] a channel row stores.
-const steps = (on) => Array.from({ length: STEP_COUNT }, (_, i) => on.includes(i));
+// Turn a list of step numbers into the level[16] a channel row stores
+// (every hit at mid, 2).
+const steps = (on) => Array.from({ length: STEP_COUNT }, (_, i) => (on.includes(i) ? 2 : 0));
 
 const row = (kit, slot, on) => ({
   kit,
@@ -15,10 +16,11 @@ const row = (kit, slot, on) => ({
 
 // A preset can fill several pads: defs[i] = { kit, rows } lands on pad i+1.
 // The remaining pads keep pattern 1's lineup with empty steps, and fx can
-// carry pitch/pan/reverb so a preset loads with its own master sound.
+// carry pitch/pan/reverb/swing so a preset loads with its own master sound.
 const payload = (bpm, defs, fx = {}) => ({
-  version: 1,
+  version: 2,
   bpm,
+  swing: fx.swing ?? 50,
   pitch: fx.pitch ?? 0,
   pan: fx.pan ?? 0,
   reverb: fx.reverb ?? 0,
@@ -329,3 +331,4 @@ export const PRESETS = [
     ),
   },
 ];
+

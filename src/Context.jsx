@@ -1,13 +1,23 @@
 import React, { useEffect, useRef, useState } from "react";
 import { DEFAULT_KIT, KITS, newChannel, newUid } from "./service/kits";
 import { loadPattern } from "./service/api";
+import { toLevel } from "./service/groove";
 
 const Context = React.createContext();
 
 const AudioContextClass = window.AudioContext || window.webkitAudioContext;
 const audioCtx = new AudioContextClass(); // Web Audio API
 const masterGain = audioCtx.createGain();
-masterGain.connect(audioCtx.destination);
+// Brick-wall limiter at -1 dBFS: hard hits stacking up would otherwise clip.
+const limiter = new DynamicsCompressorNode(audioCtx, {
+  threshold: -1,
+  knee: 0,
+  ratio: 20,
+  attack: 0.002,
+  release: 0.1,
+});
+masterGain.connect(limiter);
+limiter.connect(audioCtx.destination);
 
 // Reverb impulse: two seconds of decaying noise, generated in code.
 const makeImpulse = (ctx, seconds = 2, decay = 3) => {
@@ -79,6 +89,7 @@ const ContextProvider = ({ children }) => {
   const [pitch, setPitch] = useState(0);
   const [pan, setPan] = useState(0);
   const [reverb, setReverb] = useState(0);
+  const [swing, setSwing] = useState(50);
 
   useEffect(() => {
     panNode.pan.value = pan;
@@ -158,8 +169,9 @@ const ContextProvider = ({ children }) => {
 
   // The machine state that library entries and share links both capture.
   const snapshot = () => ({
-    version: 1,
+    version: 2,
     bpm,
+    swing,
     pitch,
     pan,
     reverb,
@@ -216,6 +228,7 @@ const ContextProvider = ({ children }) => {
     setPitch(0);
     setPan(0);
     setReverb(0);
+    setSwing(50);
     setLoadedId(null);
     toast("Reset to a blank machine");
   };
@@ -231,8 +244,9 @@ const ContextProvider = ({ children }) => {
   // Replace the whole machine state with a shared snapshot. Fields are picked
   // explicitly (junk dropped), and every row gets a fresh uid — uids minted in
   // the sharer's session would collide with this session's counter.
+  // Version 1 stored steps as booleans; version 2 stores levels and swing.
   const hydrate = (payload) => {
-    if (!payload || payload.version !== 1) return false;
+    if (!payload || (payload.version !== 1 && payload.version !== 2)) return false;
     setPatterns(
       payload.patterns.map((pattern) => ({
         kit: pattern.kit,
@@ -240,7 +254,7 @@ const ContextProvider = ({ children }) => {
           uid: newUid(),
           kit: c.kit,
           slot: c.slot,
-          steps: c.steps,
+          steps: c.steps.map(toLevel),
           muted: c.muted,
           solo: c.solo,
         })),
@@ -255,6 +269,7 @@ const ContextProvider = ({ children }) => {
     setPitch(num(payload.pitch, -24, 24, 0));
     setPan(num(payload.pan, -1, 1, 0));
     setReverb(num(payload.reverb, 0, 1, 0));
+    setSwing(num(payload.swing, 50, 75, 50));
     return true;
   };
 
@@ -298,6 +313,8 @@ const ContextProvider = ({ children }) => {
         setPan,
         reverb,
         setReverb,
+        swing,
+        setSwing,
         fxIn,
         started,
         setStarted,

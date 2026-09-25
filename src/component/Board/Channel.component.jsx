@@ -6,7 +6,7 @@ import { KITS } from "../../service/kits";
 const Channel = ({
   channel,
   currentStep,
-  toggleStep,
+  paintStep,
   toggleFlag,
   deleteChannel,
   setSample,
@@ -88,13 +88,14 @@ const Channel = ({
     return stepIndices.map((i) => (
       <input
         key={`clip${i}`}
-        checked={steps[i]}
+        checked={steps[i] > 0}
+        data-level={steps[i]}
         type="checkbox"
         className={
           "Board-Channel__item" +
           (i === currentStep ? " Board-Channel__item--now" : "")
         }
-        onChange={() => toggleStep(uid, i)}
+        onChange={() => paintStep(uid, i)}
         data-step={i}
       />
     ));

@@ -41,14 +41,14 @@ const STEPS = [
     target: ".Board",
     place: "above",
     title: "Sequencer",
-    text: "The heart of the machine. Each row is one drum, each column a 16th note, four columns to a beat. Lit pads play: click one to add or remove a hit. Per row: click the name to change the sound, the dots mute (green) or solo (red), drag the handle to reorder.",
-    mobileText: "The heart of the machine. Each row is one drum, each column a 16th note. Lit pads play: tap one to add or remove a hit. The buttons above show the 16 steps four at a time. Per row: tap the name to change the sound, the dots mute (green) or solo (red).",
+    text: "The heart of the machine. Each row is one drum, each column a 16th note, four columns to a beat. Lit pads play. Pick SOFT, MID or HARD at the top left, then click pads to draw hits that hard; clicking a pad at the same strength clears it. Per row: click the name to change the sound, the dots mute (green) or solo (red), drag the handle to reorder.",
+    mobileText: "The heart of the machine. Each row is one drum, each column a 16th note. Lit pads play. Pick SOFT, MID or HARD at the top left, then tap pads to draw hits that hard; tapping at the same strength clears one. The buttons above show the 16 steps four at a time.",
   },
   {
     target: ".Machine-card--master",
     title: "Master",
-    text: "TEMPO sets the speed in BPM, VOL the overall level. Drag a knob up or right to turn it; double-click to reset.",
-    mobileText: "TEMPO sets the speed in BPM, VOL the overall level. Slide to adjust.",
+    text: "TEMPO sets the speed in BPM, VOL the overall level, SWING pushes every second 16th late for a laid-back groove (50% is straight). Drag a knob up or right to turn it; double-click to reset.",
+    mobileText: "TEMPO sets the speed in BPM, VOL the overall level, SWING pushes every second 16th late for a laid-back groove (50% is straight).",
   },
   {
     target: ".Machine-card--fx",

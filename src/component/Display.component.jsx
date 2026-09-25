@@ -2,6 +2,7 @@ import React, { useContext, useEffect, useRef, useState } from "react";
 import { Context } from "../Context";
 import { KITS, loadSample, sampleDef } from "../service/kits";
 import { ensureAudioReady } from "../service/audio";
+import { VELOCITY_GAIN, swingDelay } from "../service/groove";
 
 const Display = () => {
   const {
@@ -19,6 +20,7 @@ const Display = () => {
     setCurrentStep,
     nextStepRef,
     pitch,
+    swing,
     fxIn,
     paramFlash,
     bpmFlash,
@@ -70,13 +72,17 @@ const Display = () => {
 
   // Refs mirror the latest state so the running scheduler reads fresh values
   // (edits and BPM changes are picked up mid-playback) without restarting.
-  const channelsRef = useRef(patterns[patternNum].channels);
+  const patternsRef = useRef(patterns);
+  const patternNumRef = useRef(patternNum);
   const bpmRef = useRef(bpm);
   const pitchRef = useRef(pitch);
+  const swingRef = useRef(swing);
   useEffect(() => {
-    channelsRef.current = patterns[patternNum].channels;
+    patternsRef.current = patterns;
+    patternNumRef.current = patternNum;
     bpmRef.current = bpm;
     pitchRef.current = pitch;
+    swingRef.current = swing;
   });
 
   useEffect(() => {
@@ -99,13 +105,13 @@ const Display = () => {
     let nextNoteTime = audioCtx.currentTime;
     let timerID;
 
-    // Schedule every active channel of the current pattern for this step
-    const scheduleNote = (beatNumber, time) => {
-      const channels = channelsRef.current;
+    // Schedule every active channel of one pattern for this step
+    const scheduleNote = (channels, beatNumber, time) => {
       const anySolo = channels.some((c) => c.solo);
 
       channels.forEach((channel) => {
-        if (!channel.steps[beatNumber]) return;
+        const level = channel.steps[beatNumber];
+        if (!level) return;
         if (channel.muted || (anySolo && !channel.solo)) return;
 
         const def = sampleDef(channel);
@@ -115,7 +121,7 @@ const Display = () => {
         const source = new AudioBufferSourceNode(audioCtx, { buffer });
         // PITCH knob: one semitone doubles the rate every 12 steps.
         source.playbackRate.value = 2 ** (pitchRef.current / 12);
-        const gainNode = new GainNode(audioCtx, { gain: def.gain });
+        const gainNode = new GainNode(audioCtx, { gain: def.gain * VELOCITY_GAIN[level] });
         source.connect(gainNode);
         gainNode.connect(fxIn);
         source.start(time);
@@ -140,12 +146,17 @@ const Display = () => {
       // schedule them and advance the pointer. The transport position lives in
       // nextStepRef (Context) and is read fresh every note, so pause keeps the
       // place and a seek from the ruler takes effect within one tick.
+      // nextNoteTime stays on the straight grid; swing only delays when an
+      // odd step sounds (and lights), so the grid never drifts.
       while (nextNoteTime < audioCtx.currentTime + scheduleAheadTime) {
         const step = nextStepRef.current;
-        scheduleNote(step, nextNoteTime);
-        drawQueue.push({ step, time: nextNoteTime });
+        const pattern = patternNumRef.current;
         // 16 steps per bar, 4 steps per beat
-        nextNoteTime += 60.0 / bpmRef.current / 4;
+        const secondsPer16th = 60.0 / bpmRef.current / 4;
+        const time = nextNoteTime + swingDelay(step, secondsPer16th, swingRef.current);
+        scheduleNote(patternsRef.current[pattern].channels, step, time);
+        drawQueue.push({ step, time });
+        nextNoteTime += secondsPer16th;
         nextStepRef.current = (step + 1) % 16;
       }
       timerID = setTimeout(scheduler, lookahead);

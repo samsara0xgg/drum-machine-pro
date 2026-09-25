@@ -1,9 +1,29 @@
 import React from "react";
 
-const Topbar = ({ currentStep, seekTo, stepIndices }) => {
+const BRUSHES = [
+  { level: 1, label: "SOFT" },
+  { level: 2, label: "MID" },
+  { level: 3, label: "HARD" },
+];
+
+const Topbar = ({ currentStep, seekTo, stepIndices, brush, setBrush }) => {
   return (
     <main className="Board-TopBar">
-      <div className="Board-TopBar__channel">Channel</div>
+      {/* velocity brush: clicked pads are drawn at this level */}
+      <div className="Board-TopBar__channel Board-Brush" role="group" aria-label="Hit strength">
+        {BRUSHES.map(({ level, label }) => (
+          <button
+            key={level}
+            className={"Board-Brush__button" + (brush === level ? " is-active" : "")}
+            data-level={level}
+            aria-pressed={brush === level}
+            title={`Draw ${label.toLowerCase()} hits`}
+            onClick={() => setBrush(level)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
       <div className="Board-TopBar__group">
         {stepIndices.map((i) => (
           <div

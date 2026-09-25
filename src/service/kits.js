@@ -90,7 +90,7 @@ export const newChannel = (kit, slot) => ({
   uid: newUid(),
   kit,
   slot,
-  steps: Array(STEP_COUNT).fill(false),
+  steps: Array(STEP_COUNT).fill(0),
   muted: false,
   solo: false,
 });

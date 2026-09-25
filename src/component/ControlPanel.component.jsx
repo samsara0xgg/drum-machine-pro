@@ -15,6 +15,8 @@ const ControlPanel = () => {
     setPan,
     reverb,
     setReverb,
+    swing,
+    setSwing,
     flashParam,
     flashBpm,
   } = useContext(Context);
@@ -25,6 +27,8 @@ const ControlPanel = () => {
       onChange: (v) => { setBpm(v); flashBpm(); } },
     { name: "VOL", min: 0, max: 100, step: 1, defaultValue: 80, value: volume,
       onChange: (v) => { setVolume(v); flashParam("MASTER VOLUME", "" + v); } },
+    { name: "SWING", min: 50, max: 75, step: 1, defaultValue: 50, value: swing,
+      onChange: (v) => { setSwing(v); flashParam("SWING", v === 50 ? "STRAIGHT" : v + "%"); } },
   ];
   const fx = [
     { name: "PITCH", min: -24, max: 24, step: 1, defaultValue: 0, value: pitch,

@@ -22,7 +22,9 @@ const newSlug = customAlphabet(
 // Structural validation only: shaped like machine state and bounded in size.
 // Deliberately NOT checked against the kit registry — the server would need a
 // copy that goes stale every time the frontend gains a kit.
-const isStep = (s) => typeof s === "boolean";
+// Version 1 stored steps as booleans, version 2 as velocity levels 0-3.
+const isStep = (s) =>
+  typeof s === "boolean" || (Number.isInteger(s) && s >= 0 && s <= 3);
 const isChannel = (c) =>
   typeof c === "object" &&
   c !== null &&
@@ -47,7 +49,7 @@ const isPattern = (p) =>
 const isValidPayload = (body) =>
   typeof body === "object" &&
   body !== null &&
-  body.version === 1 &&
+  (body.version === 1 || body.version === 2) &&
   typeof body.bpm === "number" &&
   body.bpm >= 30 &&
   body.bpm <= 300 &&

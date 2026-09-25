@@ -18,6 +18,7 @@ import {
 } from "../service/kits";
 import { Context } from "../Context";
 import { pageForStep, stepsForPage } from "../service/mobile";
+import { paint } from "../service/groove";
 
 const Board = () => {
   const {
@@ -33,6 +34,8 @@ const Board = () => {
   } = useContext(Context);
 
   const isMobile = useMediaQuery("(max-width:600px)");
+  // Velocity brush: the level new hits are drawn at (1 soft, 2 mid, 3 hard).
+  const [brush, setBrush] = useState(2);
   const [mobilePage, setMobilePage] = useState(0);
 
   // Follow the sounding group just four times per bar, not on every step.
@@ -87,11 +90,11 @@ const Board = () => {
     updateChannels((rows) => rows.filter((c) => c.uid !== uid));
   };
 
-  const toggleStep = (uid, step) => {
+  const paintStep = (uid, step) => {
     updateChannels((rows) =>
       rows.map((c) =>
         c.uid === uid
-          ? { ...c, steps: c.steps.map((on, i) => (i === step ? !on : on)) }
+          ? { ...c, steps: c.steps.map((level, i) => (i === step ? paint(level, brush) : level)) }
           : c
       )
     );
@@ -129,7 +132,13 @@ const Board = () => {
         ))}
       </div>
       <div id="scroll">
-        <TopBar currentStep={currentStep} seekTo={seekTo} stepIndices={visibleSteps} />
+        <TopBar
+          currentStep={currentStep}
+          seekTo={seekTo}
+          stepIndices={visibleSteps}
+          brush={brush}
+          setBrush={setBrush}
+        />
         <DndContext collisionDetection={closestCenter} onDragEnd={onDragEnd}>
           <SortableContext
             items={channelIds}
@@ -141,7 +150,7 @@ const Board = () => {
                   key={channel.uid}
                   channel={channel}
                   currentStep={currentStep}
-                  toggleStep={toggleStep}
+                  paintStep={paintStep}
                   toggleFlag={toggleFlag}
                   deleteChannel={deleteChannel}
                   setSample={setChannelSample}
