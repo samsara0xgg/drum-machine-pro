@@ -1,3 +1,5 @@
+import { DEFAULT_NOTE } from "./bass808.js";
+
 // Kit registry: display name, suggested BPM, and channels (label, sample URL, mix gain).
 // Slots share an order across kits (kick / snare / closed hat / open hat / percussion...)
 // so switching kits remaps row i -> new kit's slot i and the groove stays musical.
@@ -75,6 +77,14 @@ export const KITS = {
       { id: "Snare Long", sample: "/assets/audio/acetone/acetone-sd-2.mp3", gain: 0.7 },
     ],
   },
+  // Not a sampled kit: its one channel is the synthesized 808 bass
+  // (bass808.js). It never becomes a pattern's kit, only a row's sound, so
+  // kit switches leave bass rows alone like any borrowed row.
+  synth: {
+    name: "Synth",
+    synth: true,
+    channels: [{ id: "808 Bass", synth: "808", gain: 0.9 }],
+  },
 };
 
 export const DEFAULT_KIT = "707";
@@ -86,22 +96,38 @@ export const STEP_COUNT = 16;
 // else's session would collide with this counter, so loaded rows get fresh ones.
 let uid = 0;
 export const newUid = () => `ch-${++uid}`;
-export const newChannel = (kit, slot) => ({
-  uid: newUid(),
-  kit,
-  slot,
-  steps: Array(STEP_COUNT).fill(0),
-  rolls: Array(STEP_COUNT).fill(1),
-  muted: false,
-  solo: false,
-});
+export const newChannel = (kit, slot) =>
+  fitVoice({
+    uid: newUid(),
+    kit,
+    slot,
+    steps: Array(STEP_COUNT).fill(0),
+    rolls: Array(STEP_COUNT).fill(1),
+    muted: false,
+    solo: false,
+  });
 
 // Look up the sample definition (label / URL / gain) a channel points at
 export const sampleDef = (channel) => KITS[channel.kit].channels[channel.slot];
 
-// Fetch + decode one sample into the shared cache (no-op if already cached)
+export const isSynth = (channel) => Boolean(sampleDef(channel).synth);
+
+// A synth row also carries a note (MIDI) and a slide flag per step. Rows
+// that become synth rows get defaults; notes survive a switch to a sample
+// and back.
+export const fitVoice = (channel) =>
+  isSynth(channel)
+    ? {
+        notes: Array(STEP_COUNT).fill(DEFAULT_NOTE),
+        slides: Array(STEP_COUNT).fill(0),
+        ...channel,
+      }
+    : channel;
+
+// Fetch + decode one sample into the shared cache (no-op if already cached,
+// or for a synth sound, which has no sample)
 export async function loadSample(audioCtx, sample, cache) {
-  if (cache.has(sample)) return;
+  if (!sample || cache.has(sample)) return;
   const response = await fetch(sample);
   const arrayBuffer = await response.arrayBuffer();
   cache.set(sample, await audioCtx.decodeAudioData(arrayBuffer));

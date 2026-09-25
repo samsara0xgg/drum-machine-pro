@@ -25,10 +25,13 @@ const newSlug = customAlphabet(
 // Version 1 stored steps as booleans, version 2 as velocity levels 0-3.
 const isStep = (s) =>
   typeof s === "boolean" || (Number.isInteger(s) && s >= 0 && s <= 3);
-// Rolls (hits per step) are optional; older snapshots have none.
-const isRolls = (r) =>
-  r === undefined ||
-  (Array.isArray(r) && r.length === 16 && r.every((n) => Number.isInteger(n) && n >= 1 && n <= 4));
+// Optional per-step numbers: rolls (hits per step), and on 808 rows notes
+// (MIDI) and slides. Older snapshots have none.
+const isStepInts = (list, min, max) =>
+  list === undefined ||
+  (Array.isArray(list) &&
+    list.length === 16 &&
+    list.every((n) => Number.isInteger(n) && n >= min && n <= max));
 const isChannel = (c) =>
   typeof c === "object" &&
   c !== null &&
@@ -40,7 +43,9 @@ const isChannel = (c) =>
   Array.isArray(c.steps) &&
   c.steps.length === 16 &&
   c.steps.every(isStep) &&
-  isRolls(c.rolls) &&
+  isStepInts(c.rolls, 1, 4) &&
+  isStepInts(c.notes, 0, 127) &&
+  isStepInts(c.slides, 0, 1) &&
   typeof c.muted === "boolean" &&
   typeof c.solo === "boolean";
 const isPattern = (p) =>

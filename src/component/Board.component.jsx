@@ -11,6 +11,8 @@ import {
 } from "@dnd-kit/sortable";
 import {
   CHANNEL_LIMIT,
+  fitVoice,
+  isSynth,
   newChannel,
   loadKitBuffers,
   loadSample,
@@ -19,6 +21,8 @@ import {
 import { Context } from "../Context";
 import { pageForStep, stepsForPage } from "../service/mobile";
 import { paint } from "../service/groove";
+import { DEFAULT_NOTE } from "../service/bass808";
+import BassPanel from "./Board/BassPanel.component";
 
 // One brush row: the value new pads are painted with.
 const Brush = ({ label, options, value, onChange }) => (
@@ -57,6 +61,9 @@ const Board = () => {
   // and roll (hits per step, 1-4).
   const [brush, setBrush] = useState(2);
   const [rollBrush, setRollBrush] = useState(1);
+  // 808 rows also paint a note, and whether the note slides in.
+  const [noteBrush, setNoteBrush] = useState(DEFAULT_NOTE);
+  const [slideBrush, setSlideBrush] = useState(0);
   const [mobilePage, setMobilePage] = useState(0);
 
   // Follow the sounding group just four times per bar, not on every step.
@@ -103,7 +110,7 @@ const Board = () => {
 
   const setChannelSample = (uid, kit, slot) => {
     updateChannels((rows) =>
-      rows.map((c) => (c.uid === uid ? { ...c, kit, slot } : c))
+      rows.map((c) => (c.uid === uid ? fitVoice({ ...c, kit, slot }) : c))
     );
   };
 
@@ -113,15 +120,29 @@ const Board = () => {
 
   const paintStep = (uid, step) => {
     updateChannels((rows) =>
-      rows.map((c) =>
-        c.uid === uid
-          ? (() => {
-              const [level, roll] = paint(c.steps[step], c.rolls[step], brush, rollBrush);
-              const set = (list, value) => list.map((v, i) => (i === step ? value : v));
-              return { ...c, steps: set(c.steps, level), rolls: set(c.rolls, roll) };
-            })()
-          : c
-      )
+      rows.map((c) => {
+        if (c.uid !== uid) return c;
+        const synth = isSynth(c);
+        const next = paint(
+          {
+            level: c.steps[step],
+            roll: c.rolls[step],
+            ...(synth && { note: c.notes[step], slide: c.slides[step] }),
+          },
+          {
+            level: brush,
+            roll: rollBrush,
+            ...(synth && { note: noteBrush, slide: slideBrush }),
+          }
+        );
+        const set = (list, value) => list.map((v, i) => (i === step ? value : v));
+        return {
+          ...c,
+          steps: set(c.steps, next.level),
+          rolls: set(c.rolls, next.roll),
+          ...(synth && { notes: set(c.notes, next.note), slides: set(c.slides, next.slide) }),
+        };
+      })
     );
   };
 
@@ -170,6 +191,14 @@ const Board = () => {
           onChange={setRollBrush}
         />
       </div>
+      {channels.some(isSynth) && (
+        <BassPanel
+          note={noteBrush}
+          setNote={setNoteBrush}
+          slide={slideBrush}
+          setSlide={setSlideBrush}
+        />
+      )}
       <div id="scroll">
         <TopBar currentStep={currentStep} seekTo={seekTo} stepIndices={visibleSteps} />
         <DndContext collisionDetection={closestCenter} onDragEnd={onDragEnd}>

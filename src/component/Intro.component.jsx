@@ -44,6 +44,12 @@ const STEPS = [
     mobileText: "The heart of the machine. Each row is one drum, each column a 16th note. Lit pads play. The brushes above it set how new pads play: HIT picks soft, mid or hard, ROLL fires a pad 2 to 4 times within its step. Tapping a pad that already matches both clears it. The buttons above show the 16 steps four at a time.",
   },
   {
+    target: ".Bass808",
+    title: "808 Bass",
+    text: "A synthesized 808 for basslines, played by the 808 Bass row (add one from ADD CHANNEL, under Synth). Click a key to hear a note and pick it, then click pads on that row. SLIDE glides a note in from the one before, the trap signature. DECAY sets the tail, DRIVE the grit that carries it on small speakers, GLIDE how long a slide takes.",
+    mobileText: "A synthesized 808 for basslines, played by the 808 Bass row (add one from ADD CHANNEL, under Synth). Tap a key to hear a note and pick it, then tap pads on that row. SLIDE glides a note in from the one before. DECAY sets the tail, DRIVE the grit, GLIDE how long a slide takes.",
+  },
+  {
     target: ".Machine-card--master",
     title: "Master",
     text: "TEMPO sets the speed in BPM, VOL the overall level. SWING pushes every second 16th late for a laid-back groove: 50% is straight, hip hop often sits at 55-60%. Drag a knob up or right to turn it; double-click to reset.",

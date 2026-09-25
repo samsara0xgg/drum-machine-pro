@@ -13,10 +13,13 @@ export const toLevel = (step) => (typeof step === "number" ? step : step ? 2 : 0
 // Snapshots without rolls play every step once.
 export const toRoll = (roll) => (Number.isInteger(roll) && roll >= 1 && roll <= 4 ? roll : 1);
 
-// Clicking a pad with the brushes: a pad already at exactly the brush's level
-// and roll clears; anything else takes both. Returns [level, roll].
-export const paint = (level, roll, brushLevel, brushRoll) =>
-  level === brushLevel && roll === brushRoll ? [0, 1] : [brushLevel, brushRoll];
+// Clicking a pad with the brushes: a pad that already matches every brush
+// clears; anything else takes them all. Steps and brushes are
+// { level, roll }, plus { note, slide } on an 808 row.
+export const paint = (step, brush) =>
+  Object.keys(brush).every((key) => step[key] === brush[key])
+    ? { ...step, level: 0, roll: 1 }
+    : { ...step, ...brush };
 
 // Swing (MPC-style %) pushes every second 16th late: 50 is straight,
 // ~66 a triplet feel, 75 the maximum. Returns the delay in seconds.

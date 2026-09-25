@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
-import { DEFAULT_KIT, KITS, newChannel, newUid } from "./service/kits";
+import { DEFAULT_KIT, KITS, fitVoice, newChannel, newUid } from "./service/kits";
+import { createBass } from "./service/bass808";
 import { loadPattern } from "./service/api";
 import { filterHz, toLevel, toRoll } from "./service/groove";
 
@@ -56,6 +57,9 @@ panNode.connect(convolver);
 dryGain.connect(masterGain);
 convolver.connect(wetGain);
 wetGain.connect(masterGain);
+
+// The synthesized 808 plays into the same FX chain as the samples.
+const bass = createBass(audioCtx, fxIn);
 
 const PATTERN_COUNT = 12;
 const DEFAULT_CHANNEL_COUNT = 6;
@@ -121,6 +125,14 @@ const ContextProvider = ({ children }) => {
   const [reverb, setReverb] = useState(0);
   const [swing, setSwing] = useState(50);
   const [filter, setFilter] = useState(0);
+  // The 808 bass voice: tail length (s), drive (%), slide time (ms).
+  const [bassDecay, setBassDecay] = useState(0.9);
+  const [bassDrive, setBassDrive] = useState(30);
+  const [bassGlide, setBassGlide] = useState(80);
+
+  useEffect(() => {
+    bass.setDrive(bassDrive);
+  }, [bassDrive]);
 
   // While the song plays it owns the filter: the scheduler ramps it sample-
   // accurately and this state only moves the knob. Otherwise glide to the
@@ -217,6 +229,7 @@ const ContextProvider = ({ children }) => {
     bpm,
     swing,
     filter,
+    bass: { decay: bassDecay, drive: bassDrive, glide: bassGlide },
     pitch,
     pan,
     reverb,
@@ -275,6 +288,9 @@ const ContextProvider = ({ children }) => {
     setReverb(0);
     setSwing(50);
     setFilter(0);
+    setBassDecay(0.9);
+    setBassDrive(30);
+    setBassGlide(80);
     setLoadedId(null);
     toast("Reset to a blank machine");
   };
@@ -290,22 +306,26 @@ const ContextProvider = ({ children }) => {
   // Replace the whole machine state with a shared snapshot. Fields are picked
   // explicitly (junk dropped), and every row gets a fresh uid — uids minted in
   // the sharer's session would collide with this session's counter.
-  // Version 1 stored steps as booleans; version 2 stores levels, rolls
-  // (optional), swing and filter.
+  // Version 1 stored steps as booleans; version 2 stores levels, swing,
+  // filter and the 808's settings, plus optional rolls, notes and slides.
   const hydrate = (payload) => {
     if (!payload || (payload.version !== 1 && payload.version !== 2)) return false;
     setPatterns(
       payload.patterns.map((pattern) => ({
         kit: pattern.kit,
-        channels: pattern.channels.map((c) => ({
-          uid: newUid(),
-          kit: c.kit,
-          slot: c.slot,
-          steps: c.steps.map(toLevel),
-          rolls: Array.isArray(c.rolls) ? c.rolls.map(toRoll) : Array(16).fill(1),
-          muted: c.muted,
-          solo: c.solo,
-        })),
+        channels: pattern.channels.map((c) =>
+          fitVoice({
+            uid: newUid(),
+            kit: c.kit,
+            slot: c.slot,
+            steps: c.steps.map(toLevel),
+            rolls: Array.isArray(c.rolls) ? c.rolls.map(toRoll) : Array(16).fill(1),
+            ...(Array.isArray(c.notes) && { notes: c.notes }),
+            ...(Array.isArray(c.slides) && { slides: c.slides }),
+            muted: c.muted,
+            solo: c.solo,
+          })
+        ),
       }))
     );
     setPatternNum(payload.patternNum);
@@ -319,6 +339,10 @@ const ContextProvider = ({ children }) => {
     setReverb(num(payload.reverb, 0, 1, 0));
     setSwing(num(payload.swing, 50, 75, 50));
     setFilter(num(payload.filter, -100, 100, 0));
+    const b = payload.bass || {};
+    setBassDecay(num(b.decay, 0.1, 3, 0.9));
+    setBassDrive(num(b.drive, 0, 100, 30));
+    setBassGlide(num(b.glide, 10, 300, 80));
     return true;
   };
 
@@ -370,6 +394,13 @@ const ContextProvider = ({ children }) => {
         setFilter,
         filterNodes,
         analyser,
+        bass,
+        bassDecay,
+        setBassDecay,
+        bassDrive,
+        setBassDrive,
+        bassGlide,
+        setBassGlide,
         fxIn,
         started,
         setStarted,

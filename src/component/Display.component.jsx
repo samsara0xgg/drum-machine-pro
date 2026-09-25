@@ -70,6 +70,9 @@ const Display = () => {
     filterNodes,
     analyser,
     flashParam,
+    bass,
+    bassDecay,
+    bassGlide,
     fxIn,
     paramFlash,
     bpmFlash,
@@ -126,7 +129,9 @@ const Display = () => {
   const bpmRef = useRef(bpm);
   const pitchRef = useRef(pitch);
   const swingRef = useRef(swing);
+  const bassRef = useRef({ decay: bassDecay, glide: bassGlide });
   useEffect(() => {
+    bassRef.current = { decay: bassDecay, glide: bassGlide };
     patternsRef.current = patterns;
     patternNumRef.current = patternNum;
     bpmRef.current = bpm;
@@ -167,11 +172,30 @@ const Display = () => {
         if (channel.muted || (anySolo && !channel.solo)) return;
 
         const def = sampleDef(channel);
+        const roll = channel.rolls[beatNumber];
+
+        // The 808 row plays its note on the synth voice; a slide applies to
+        // the first hit of a roll, the rest restrike.
+        if (def.synth) {
+          for (let hit = 0; hit < roll; hit++) {
+            bass.play(
+              time + (hit * span) / roll,
+              channel.notes[beatNumber] + pitchRef.current,
+              def.gain * VELOCITY_GAIN[level],
+              {
+                decay: bassRef.current.decay,
+                glide: bassRef.current.glide / 1000,
+                slide: hit === 0 && channel.slides[beatNumber] === 1,
+              }
+            );
+          }
+          return;
+        }
+
         const buffer = buffersRef.current.get(def.sample);
         if (!buffer) return; // still loading
         if (def.id.startsWith("Bass")) kick = Math.max(kick, level);
 
-        const roll = channel.rolls[beatNumber];
         for (let hit = 0; hit < roll; hit++) {
           const source = new AudioBufferSourceNode(audioCtx, { buffer });
           // PITCH knob: one semitone doubles the rate every 12 steps.
@@ -266,11 +290,12 @@ const Display = () => {
     return () => {
       clearTimeout(timerID);
       cancelAnimationFrame(rafID);
+      bass.stop(); // an 808 tail can ring for seconds
     };
     // flashParam is recreated every render but only wraps a stable setter,
     // so it stays out of the deps (listing it would restart the clock).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [started, audioCtx, fxIn, buffersRef, setCurrentStep, nextStepRef, songRef, showPattern, setFilter, filterNodes]);
+  }, [started, audioCtx, fxIn, buffersRef, setCurrentStep, nextStepRef, songRef, showPattern, setFilter, filterNodes, bass]);
 
   return (
     <div className="Screen">
