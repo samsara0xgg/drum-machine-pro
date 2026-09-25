@@ -31,7 +31,7 @@ const AddChannel = ({ addChannel, kitId }) => {
         {kitIds.flatMap((k) => [
           <ListSubheader key={`header-${k}`}>{KITS[k].name}</ListSubheader>,
           ...KITS[k].channels.map((def, slot) => (
-            <MenuItem key={def.sample} onClick={() => pick(k, slot)}>
+            <MenuItem key={`${k}:${slot}`} onClick={() => pick(k, slot)}>
               {def.id}
             </MenuItem>
           )),

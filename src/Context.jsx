@@ -1,13 +1,36 @@
 import React, { useEffect, useRef, useState } from "react";
-import { DEFAULT_KIT, KITS, newChannel, newUid } from "./service/kits";
+import { DEFAULT_KIT, KITS, fitVoice, newChannel, newUid } from "./service/kits";
+import { createBass } from "./service/bass808";
 import { loadPattern } from "./service/api";
+import { filterHz, toLevel, toRoll } from "./service/groove";
 
 const Context = React.createContext();
 
 const AudioContextClass = window.AudioContext || window.webkitAudioContext;
 const audioCtx = new AudioContextClass(); // Web Audio API
 const masterGain = audioCtx.createGain();
-masterGain.connect(audioCtx.destination);
+// Limiter: hard hits stacking up would otherwise clip. Web Audio's compressor
+// adds its own makeup gain (+3.4 dB here) and 20:1 still lets overs creep up,
+// so a -6 dB threshold is what holds the output peaks near -1 dBFS.
+const limiter = new DynamicsCompressorNode(audioCtx, {
+  threshold: -6,
+  knee: 0,
+  ratio: 20,
+  attack: 0,
+  release: 0.1,
+});
+// DJ filter on the whole mix (FILTER knob, and the demo song's sweeps).
+// Q is a feel value: a little resonance makes sweeps audible.
+const lowpass = new BiquadFilterNode(audioCtx, { type: "lowpass", frequency: 20000, Q: 1.5 });
+const highpass = new BiquadFilterNode(audioCtx, { type: "highpass", frequency: 20, Q: 1.5 });
+// Taps the final output for the screen's oscilloscope; passes audio through.
+const analyser = new AnalyserNode(audioCtx, { fftSize: 1024 });
+const filterNodes = { lowpass, highpass };
+masterGain.connect(lowpass);
+lowpass.connect(highpass);
+highpass.connect(limiter);
+limiter.connect(analyser);
+analyser.connect(audioCtx.destination);
 
 // Reverb impulse: two seconds of decaying noise, generated in code.
 const makeImpulse = (ctx, seconds = 2, decay = 3) => {
@@ -37,6 +60,9 @@ dryGain.connect(masterGain);
 convolver.connect(wetGain);
 wetGain.connect(masterGain);
 
+// The synthesized 808 plays into the same FX chain as the samples.
+const bass = createBass(audioCtx, fxIn);
+
 const PATTERN_COUNT = 12;
 const DEFAULT_CHANNEL_COUNT = 6;
 const LIBRARY_KEY = "drum-machine-library";
@@ -65,9 +91,29 @@ const ContextProvider = ({ children }) => {
   // 12 independent patterns; each owns its kit and its channel rows:
   // { kit, channels: [{ uid, kit, slot, steps, muted, solo }] }
   // (rows carry their own kit too, so cross-kit mixing per row is allowed)
-  const [patterns, setPatterns] = useState(defaultPatterns);
+  const [patterns, setPatternsState] = useState(defaultPatterns);
 
-  const [patternNum, setPatternNum] = useState(0);
+  const [patternNum, showPattern] = useState(0);
+
+  // The demo song: { order, loopFrom, pos } while the scheduler advances
+  // patterns bar by bar, null otherwise. Every hand edit or pattern pick goes
+  // through the two setters below and ends it, so the section being touched
+  // stays put. The scheduler itself moves the display with showPattern.
+  // Ending the song also lets go of its filter sweep.
+  const songRef = useRef(null);
+  const stopSong = () => {
+    if (!songRef.current) return;
+    songRef.current = null;
+    setFilter(0);
+  };
+  const setPatterns = (next) => {
+    stopSong();
+    setPatternsState(next);
+  };
+  const setPatternNum = (n) => {
+    stopSong();
+    showPattern(n);
+  };
   // Step the playhead is on right now (-1 = stopped); driven by the audio
   // engine's draw queue so visuals track what is actually sounding.
   const [currentStep, setCurrentStep] = useState(-1);
@@ -79,6 +125,29 @@ const ContextProvider = ({ children }) => {
   const [pitch, setPitch] = useState(0);
   const [pan, setPan] = useState(0);
   const [reverb, setReverb] = useState(0);
+  const [swing, setSwing] = useState(50);
+  const [filter, setFilter] = useState(0);
+  // The 808 bass voice: tail length (s), drive (%), slide time (ms).
+  const [bassDecay, setBassDecay] = useState(0.9);
+  const [bassDrive, setBassDrive] = useState(30);
+  const [bassGlide, setBassGlide] = useState(80);
+
+  useEffect(() => {
+    bass.setDrive(bassDrive);
+  }, [bassDrive]);
+
+  // While the song plays it owns the filter: the scheduler ramps it sample-
+  // accurately and this state only moves the knob. Otherwise glide to the
+  // knob, dropping any ramp the song left scheduled.
+  useEffect(() => {
+    if (songRef.current) return;
+    const hz = filterHz(filter);
+    const now = audioCtx.currentTime;
+    for (const [node, target] of [[lowpass, hz.lowpass], [highpass, hz.highpass]]) {
+      node.frequency.cancelScheduledValues(now);
+      node.frequency.setTargetAtTime(target, now, 0.02);
+    }
+  }, [filter]);
 
   useEffect(() => {
     panNode.pan.value = pan;
@@ -158,8 +227,11 @@ const ContextProvider = ({ children }) => {
 
   // The machine state that library entries and share links both capture.
   const snapshot = () => ({
-    version: 1,
+    version: 2,
     bpm,
+    swing,
+    filter,
+    bass: { decay: bassDecay, drive: bassDrive, glide: bassGlide },
     pitch,
     pan,
     reverb,
@@ -216,6 +288,11 @@ const ContextProvider = ({ children }) => {
     setPitch(0);
     setPan(0);
     setReverb(0);
+    setSwing(50);
+    setFilter(0);
+    setBassDecay(0.9);
+    setBassDrive(30);
+    setBassGlide(80);
     setLoadedId(null);
     toast("Reset to a blank machine");
   };
@@ -231,19 +308,26 @@ const ContextProvider = ({ children }) => {
   // Replace the whole machine state with a shared snapshot. Fields are picked
   // explicitly (junk dropped), and every row gets a fresh uid — uids minted in
   // the sharer's session would collide with this session's counter.
+  // Version 1 stored steps as booleans; version 2 stores levels, swing,
+  // filter and the 808's settings, plus optional rolls, notes and slides.
   const hydrate = (payload) => {
-    if (!payload || payload.version !== 1) return false;
+    if (!payload || (payload.version !== 1 && payload.version !== 2)) return false;
     setPatterns(
       payload.patterns.map((pattern) => ({
         kit: pattern.kit,
-        channels: pattern.channels.map((c) => ({
-          uid: newUid(),
-          kit: c.kit,
-          slot: c.slot,
-          steps: c.steps,
-          muted: c.muted,
-          solo: c.solo,
-        })),
+        channels: pattern.channels.map((c) =>
+          fitVoice({
+            uid: newUid(),
+            kit: c.kit,
+            slot: c.slot,
+            steps: c.steps.map(toLevel),
+            rolls: Array.isArray(c.rolls) ? c.rolls.map(toRoll) : Array(16).fill(1),
+            ...(Array.isArray(c.notes) && { notes: c.notes }),
+            ...(Array.isArray(c.slides) && { slides: c.slides }),
+            muted: c.muted,
+            solo: c.solo,
+          })
+        ),
       }))
     );
     setPatternNum(payload.patternNum);
@@ -255,6 +339,12 @@ const ContextProvider = ({ children }) => {
     setPitch(num(payload.pitch, -24, 24, 0));
     setPan(num(payload.pan, -1, 1, 0));
     setReverb(num(payload.reverb, 0, 1, 0));
+    setSwing(num(payload.swing, 50, 75, 50));
+    setFilter(num(payload.filter, -100, 100, 0));
+    const b = payload.bass || {};
+    setBassDecay(num(b.decay, 0.1, 3, 0.9));
+    setBassDrive(num(b.drive, 0, 100, 30));
+    setBassGlide(num(b.glide, 10, 300, 80));
     return true;
   };
 
@@ -282,6 +372,8 @@ const ContextProvider = ({ children }) => {
         setPatterns,
         patternNum,
         setPatternNum,
+        showPattern,
+        songRef,
         currentStep,
         setCurrentStep,
         nextStepRef,
@@ -298,6 +390,19 @@ const ContextProvider = ({ children }) => {
         setPan,
         reverb,
         setReverb,
+        swing,
+        setSwing,
+        filter,
+        setFilter,
+        filterNodes,
+        analyser,
+        bass,
+        bassDecay,
+        setBassDecay,
+        bassDrive,
+        setBassDrive,
+        bassGlide,
+        setBassGlide,
         fxIn,
         started,
         setStarted,
@@ -315,6 +420,7 @@ const ContextProvider = ({ children }) => {
         deleteEntry,
         loadEntry,
         loadPreset,
+        hydrate,
         newMachine,
         notice,
         toast,

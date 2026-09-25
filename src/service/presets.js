@@ -1,9 +1,11 @@
-// Built-in Library grooves. Each payload is a full v1 snapshot, same shape as a
+// Built-in Library grooves. Each payload is a full v2 snapshot, same shape as a
 // share link, so loading one goes through the same hydrate() as /p/:slug.
-import { STEP_COUNT } from "./kits";
+import { STEP_COUNT } from "./kits.js";
+import { DEFAULT_NOTE, parseNote } from "./bass808.js";
 
-// Turn a list of step numbers into the bool[16] a channel row stores.
-const steps = (on) => Array.from({ length: STEP_COUNT }, (_, i) => on.includes(i));
+// Turn a list of step numbers into the level[16] a channel row stores
+// (every hit at mid, 2).
+const steps = (on) => Array.from({ length: STEP_COUNT }, (_, i) => (on.includes(i) ? 2 : 0));
 
 const row = (kit, slot, on) => ({
   kit,
@@ -15,10 +17,12 @@ const row = (kit, slot, on) => ({
 
 // A preset can fill several pads: defs[i] = { kit, rows } lands on pad i+1.
 // The remaining pads keep pattern 1's lineup with empty steps, and fx can
-// carry pitch/pan/reverb so a preset loads with its own master sound.
+// carry pitch/pan/reverb/swing/filter so a preset loads with its own master sound.
 const payload = (bpm, defs, fx = {}) => ({
-  version: 1,
+  version: 2,
   bpm,
+  swing: fx.swing ?? 50,
+  filter: fx.filter ?? 0,
   pitch: fx.pitch ?? 0,
   pan: fx.pan ?? 0,
   reverb: fx.reverb ?? 0,
@@ -329,3 +333,123 @@ export const PRESETS = [
     ),
   },
 ];
+
+// The power-on demo: a trap beat in F minor across six pads, written as
+// drum tabs. One character per 16th: "-" rest, 1 soft, 2 mid, 3 hard;
+// spaces split beats. A row is its hits tab, or [hits, rolls] where a roll
+// digit is how many times that step fires. The 808 row is { hits, notes }:
+// one note per hit in order, "~" marking a slide into it. Half-time feel:
+// the backbeat lands on step 9.
+const LINEUP = {
+  kick: ["808", 0],
+  bass: ["synth", 0],
+  clap: ["808", 4],
+  snare: ["hiphop", 1],
+  hat: ["808", 2],
+  openHat: ["808", 3],
+  rim: ["808", 7],
+  cowbell: ["808", 5],
+};
+const REST = "---- ---- ---- ----";
+const tab = (text, rest) => [...text.replace(/ /g, "")].map((c) => (c === "-" ? rest : Number(c)));
+const bassLine = (steps, notes) => {
+  const names = notes.split(" ").filter(Boolean);
+  const hits = steps.filter(Boolean).length;
+  if (names.length !== hits) throw new Error(`808 row has ${hits} hits but ${names.length} notes`);
+  let next = 0;
+  const line = steps.map((level) => (level ? names[next++] : null));
+  return {
+    notes: line.map((name) => (name ? parseNote(name.replace("~", "")) : DEFAULT_NOTE)),
+    slides: line.map((name) => (name?.startsWith("~") ? 1 : 0)),
+  };
+};
+const section = (tabs) => ({
+  kit: "808",
+  rows: Object.entries(LINEUP).map(([name, [kit, slot]]) => {
+    const spec = tabs[name] ?? REST;
+    const [hits, rolls = REST] = spec.hits ? [spec.hits] : [].concat(spec);
+    const steps = tab(hits, 0);
+    const row = { kit, slot, steps, rolls: tab(rolls, 1), muted: false, solo: false };
+    return kit === "synth" ? { ...row, ...bassLine(steps, spec.notes ?? "") } : row;
+  }),
+});
+
+const intro = section({
+  hat:     "2-1- 2-1- 2-1- 2-1-",
+  rim:     "---- ---- 2--- ----",
+  cowbell: "2--2 --2- ---- ----",
+});
+const groove = section({
+  kick:    "3--- ---- --3- --2-",
+  bass:   { hits: "3--- ---- --2- --2-", notes: "F1 F1 ~G#1" },
+  clap:    "---- ---- 3--- ----",
+  snare:   "---- ---- 2--- ----",
+  hat:    ["2-2- 2-22 2-2- 2-22",
+           "---- ---2 ---- ---3"],
+  cowbell: "1--1 --1- ---- ----",
+});
+const buildUp = section({
+  kick:    "3--- ---- ---- ----",
+  bass:   { hits: "3--- ---- ---- ----", notes: "F1" },
+  clap:    "---- ---- 3--- ----",
+  snare:   "2-2- 2-2- 2-2- 2-2-",
+  hat:     "1111 1111 1111 1111",
+});
+// ends a beat early: the silence before the drop
+const buildPeak = section({
+  clap:    "---- ---- 3--- ----",
+  snare:  ["2222 3333 3333 ----",
+           "---- 2222 3344 ----"],
+  hat:    ["1111 1111 ---- ----",
+           "2222 2222 ---- ----"],
+});
+const chorus = section({
+  kick:    "3--- ---2 --3- -2--",
+  bass:   { hits: "3--- ---2 --3- -2--", notes: "F1 C2 ~A#1 ~G#1" },
+  clap:    "---- ---- 3--- ----",
+  snare:   "---- ---- 3--- ---1",
+  hat:    ["2-22 2--2 2-22 2222",
+           "---3 ---2 ---2 --34"],
+  openHat: "---- --2- ---- ----",
+  cowbell: "2--1 --2- 2--1 --2-",
+});
+const chorusFill = section({
+  kick:    "3--- ---2 --3- ----",
+  bass:   { hits: "3--- ---2 --3- ----", notes: "F1 ~F2 ~C2" },
+  clap:    "---- ---- 3--- ----",
+  snare:  ["---- ---- 3--- 2333",
+           "---- ---- ---- 2234"],
+  hat:    ["2-22 2--2 2222 ----",
+           "---3 ---2 2344 ----"],
+  openHat: "---- --2- ---- ----",
+  cowbell: "2--1 --2- ---- ----",
+});
+
+// One entry per bar: which pad plays, and an optional filter sweep across
+// the bar (FILTER knob values, from -> to). The intro opens up out of a
+// low-pass, the build-up thins out through a rising high-pass, and the drop
+// snaps it open. After the chorus fill it loops back to the groove.
+export const DEMO_SONG = {
+  payload: {
+    ...payload(140, [intro, groove, buildUp, buildPeak, chorus, chorusFill], {
+      reverb: 0.15,
+      filter: -85,
+    }),
+    bass: { decay: 1.1, drive: 45, glide: 90 },
+  },
+  bars: [
+    { pad: 0, filter: [-85, -70] },
+    { pad: 0, filter: [-70, -25] },
+    { pad: 1, filter: [0, 0] },
+    { pad: 1 },
+    { pad: 1 },
+    { pad: 1 },
+    { pad: 2, filter: [0, 40] },
+    { pad: 3, filter: [40, 85] },
+    { pad: 4, filter: [0, 0] },
+    { pad: 4 },
+    { pad: 4 },
+    { pad: 5 },
+  ],
+  loopFrom: 2,
+};

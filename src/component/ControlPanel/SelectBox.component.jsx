@@ -16,7 +16,9 @@ export default function SelectBox() {
       value={currentKit}
       onChange={(e) => switchKit(e.target.value)}
     >
-      {Object.entries(KITS).map(([kitId, kit]) => (
+      {Object.entries(KITS)
+        .filter(([, kit]) => !kit.synth)
+        .map(([kitId, kit]) => (
         <MenuItem key={kitId} value={kitId}>
           {kit.name} · {kit.suggestedBpm} BPM
         </MenuItem>

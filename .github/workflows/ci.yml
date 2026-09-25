@@ -33,5 +33,15 @@ jobs:
           curl -sf localhost:8088/api/patterns/$slug | jq -e '.bpm == 120'
           curl -sf -o /dev/null localhost:8088/p/$slug
 
+      - name: Version 2 patterns keep velocity, rolls and 808 notes; bad ones are refused
+        run: |
+          v2=$(jq -nc '{version: 2, bpm: 140, swing: 55, filter: 0, patternNum: 0, patterns: [{kit: "808", channels: [
+            {kit: "synth", slot: 0, steps: ([3] + [range(15) | 0]), rolls: ([4] + [range(15) | 1]),
+             notes: [range(16) | 29], slides: ([0, 1] + [range(14) | 0]), muted: false, solo: false}]}]}')
+          slug=$(curl -sf -X POST -H 'Content-Type: application/json' -d "$v2" localhost:8088/api/patterns | jq -r .slug)
+          curl -sf localhost:8088/api/patterns/$slug | jq -e '.patterns[0].channels[0] | .steps[0] == 3 and .rolls[0] == 4 and .notes[0] == 29 and .slides[1] == 1'
+          bad=$(echo "$v2" | jq -c '.patterns[0].channels[0].rolls[0] = 5')
+          test "$(curl -s -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' -d "$bad" localhost:8088/api/patterns)" = 400
+
       - if: failure()
         run: docker compose logs

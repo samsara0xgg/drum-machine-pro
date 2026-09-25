@@ -1,9 +1,12 @@
+@use "sass:math";
 @import url("https://fonts.googleapis.com/css2?family=PT+Sans:wght@400;700&family=DM+Mono:wght@400;500&display=swap");
 
 $Surface-00dp: #121212;
 $Primary-200: #d1f998;
 $Secondary-200: #b39ddb;
 $Mono: "DM Mono", "SF Mono", Menlo, monospace;
+$ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+$ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
 
 @mixin dp($overlay) {
   background-color: rgba($color: #ffffff, $alpha: $overlay);
@@ -54,6 +57,17 @@ body {
   display: flex;
   flex-direction: column;
   gap: 14px;
+  position: relative;
+
+  // kick pulse: Display fades this in and out with each kick
+  &-glow {
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    pointer-events: none;
+    opacity: 0;
+    box-shadow: 0 0 0 1px rgba(209, 249, 152, 0.55), 0 0 36px 2px rgba(209, 249, 152, 0.22);
+  }
 
   // control row: knobs card + instrument card + spacer + pattern pads
   &-crow {
@@ -153,6 +167,9 @@ body {
 
 // black screen strip embedded at the top of the bezel
 .Screen {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   background-color: black;
   border-radius: 8px;
   box-shadow: 0 1px 2px black;
@@ -161,6 +178,15 @@ body {
   gap: 18px;
   padding: 10px 20px;
   min-height: 62px;
+
+  // live oscilloscope, drawn behind the readouts while playing
+  &-scope {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    width: 100%;
+    height: 100%;
+  }
 
   // Part 1 (left): the last param touched; fully dark when idle.
   // Same width as the right zone, so Part 2 sits exactly centered.
@@ -460,12 +486,20 @@ body {
       height: var(--cell);
       width: 190px;
       border-radius: 7px;
-      @include dp(0.2);
+      @include dp(0.07);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05), 0 1px 2px black;
+
+      // the synthesized 808 row
+      &.is-synth {
+        box-shadow: inset 2px 0 0 $Primary-200, inset 0 0 0 1px rgba(209, 249, 152, 0.14),
+          0 1px 2px black;
+      }
     }
 
     &__dragicon {
-      cursor: pointer;
+      cursor: grab;
       flex: none;
+      color: rgba(255, 255, 255, 0.3);
     }
     &__stateicon {
       display: flex;
@@ -478,18 +512,45 @@ body {
       display: inline-block;
     }
     &__item {
-      -webkit-appearance: none;
-      -moz-appearance: none;
-      appearance: none;
-      display: inline-block;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      vertical-align: top;
       margin: 2px;
+      padding: 0;
+      border: none;
       width: var(--cell);
       height: var(--cell);
       border-radius: 8px;
       @include dp(0.04);
+      // 808 rows print the note on the pad
+      font-family: $Mono;
+      font-size: 9.5px;
+      font-weight: 500;
+      color: rgba(0, 0, 0, 0.72);
+      white-space: nowrap;
+      overflow: hidden;
+      cursor: pointer;
 
-      &:checked {
+      &[aria-pressed="true"] {
         background-color: $Primary-200;
+      }
+      // velocity: soft hits read half-lit, hard hits get a bright rim
+      &[aria-pressed="true"][data-level="1"] {
+        background-color: rgba(209, 249, 152, 0.4);
+      }
+      &[aria-pressed="true"][data-level="3"] {
+        box-shadow: inset 0 0 0 2px #f6ffe9, 0 1px 2px black;
+      }
+      // rolls: a pad firing N times is cut into N slices
+      @for $n from 2 through 4 {
+        &[aria-pressed="true"][data-roll="#{$n}"] {
+          background-image: repeating-linear-gradient(
+            90deg,
+            transparent 0 calc(#{math.div(100%, $n)} - 1.5px),
+            rgba(26, 26, 26, 0.55) calc(#{math.div(100%, $n)} - 1.5px) calc(#{math.div(100%, $n)})
+          );
+        }
       }
 
       &:focus {
@@ -501,9 +562,15 @@ body {
     &__item--now {
       background-color: rgba(209, 249, 152, 0.16);
 
-      &:checked {
+      &[aria-pressed="true"] {
         background-color: #eaffc7;
         box-shadow: 0 0 8px rgba(209, 249, 152, 0.45), 0 1px 2px black;
+      }
+      &[aria-pressed="true"][data-level="1"] {
+        background-color: rgba(234, 255, 199, 0.6);
+      }
+      &[aria-pressed="true"][data-level="3"] {
+        box-shadow: inset 0 0 0 2px #ffffff, 0 0 8px rgba(209, 249, 152, 0.45), 0 1px 2px black;
       }
     }
 
@@ -577,9 +644,136 @@ body {
 }
 
 #scroll {
-  overflow: auto;
-  max-height: 330px;
   min-width: 890px;
+}
+
+// Brushes above the grid, in the pattern-pad language: HIT sets how hard
+// clicked pads play (each swatch shows how that level looks on the grid),
+// ROLL how many times a pad fires within its step.
+.Board-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  margin-bottom: 10px;
+}
+.Board-Brush {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+
+  &__label {
+    margin-right: 4px;
+    font-size: 9px;
+    font-weight: bold;
+    letter-spacing: 0.14em;
+    @include fontdp(0.5);
+  }
+  &__button {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    min-width: 28px;
+    justify-content: center;
+    padding: 5px 7px;
+    border: none;
+    border-radius: 5px;
+    background-color: #2e2e2e;
+    font-family: inherit;
+    font-size: 9.5px;
+    font-weight: bold;
+    letter-spacing: 0.06em;
+    @include fontdp(0.5);
+    cursor: pointer;
+
+    &[data-kind="HIT"]::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 2px;
+      background-color: $Primary-200;
+    }
+    &[data-kind="HIT"][data-value="1"]::before {
+      background-color: rgba(209, 249, 152, 0.4);
+    }
+    &[data-kind="HIT"][data-value="3"]::before {
+      box-shadow: inset 0 0 0 1.5px #f6ffe9;
+    }
+    &.is-active {
+      background-color: rgba(209, 249, 152, 0.16);
+      box-shadow: inset 0 0 0 1px $Primary-200;
+      color: $Primary-200;
+    }
+  }
+}
+
+// The 808 module: note keyboard (the note brush), SLIDE, and the voice's
+// knobs, framed like the machine's other cards but tinted synth-green.
+.Bass808 {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 22px;
+  margin: 8px 0 14px;
+  padding: 16px 14px 12px;
+  border-radius: 10px;
+  background-color: rgba(209, 249, 152, 0.035);
+  box-shadow: inset 0 0 0 1px rgba(209, 249, 152, 0.16);
+
+  &__label {
+    position: absolute;
+    top: -7px;
+    left: 10px;
+    padding: 0 5px;
+    background-color: #252525;
+    font-size: 9px;
+    font-weight: bold;
+    letter-spacing: 0.14em;
+    color: $Primary-200;
+  }
+  // a two-octave mini keyboard; black keys sit over the white-key gaps
+  // (their left offset is set inline from WHITE in BassPanel)
+  &__keys {
+    position: relative;
+    display: flex;
+    gap: 1px;
+    height: 48px;
+  }
+  &__key {
+    width: 20px;
+    height: 100%;
+    padding: 0 0 4px;
+    border: none;
+    border-radius: 0 0 4px 4px;
+    background-color: #d9dbd3;
+    color: rgba(0, 0, 0, 0.45);
+    font-family: $Mono;
+    font-size: 7.5px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.1s ease;
+
+    &.is-black {
+      position: absolute;
+      top: 0;
+      z-index: 1;
+      width: 13px;
+      height: 58%;
+      border-radius: 0 0 3px 3px;
+      background-color: #161616;
+      box-shadow: 0 2px 3px rgba(0, 0, 0, 0.6);
+    }
+    &.is-active {
+      background-color: $Primary-200;
+      color: #1a1a1a;
+    }
+  }
+  &__knobs {
+    display: flex;
+    gap: 14px;
+  }
 }
 
 #scroll::-webkit-scrollbar {
@@ -798,7 +992,8 @@ li {
       min-height: 44px;
       padding: 8px 10px;
     }
-    &-button:nth-of-type(n + 3) {
+    // only the header's own: the tour card's NEXT is also a third button
+    > .Header-button:nth-of-type(n + 3) {
       display: none;
     }
   }
@@ -969,6 +1164,22 @@ li {
     }
   }
 
+  .Board-tools {
+    gap: 8px 14px;
+  }
+  .Bass808 {
+    gap: 12px;
+
+    &__knobs {
+      width: 100%;
+      flex-direction: column;
+      gap: 6px;
+    }
+  }
+  .Board-Brush__button {
+    min-height: 36px;
+  }
+
   .Board-Channel {
     width: 100%;
     min-width: 0;
@@ -982,7 +1193,6 @@ li {
       height: 46px;
       padding: 0 7px;
       gap: 5px;
-      background-color: #5a5a5a;
     }
     &__dragicon {
       width: 14px;
@@ -1036,5 +1246,324 @@ li {
     .Board-Channel {
       grid-template-columns: 104px minmax(0, 1fr) 24px;
     }
+  }
+}
+
+// ---- Intro: power screen, boot sequence, module tour (Intro.component.jsx) ----
+
+// Powered off: the machine is a faint silhouette behind the power screen.
+.Machine.is-off {
+  opacity: 0.12;
+}
+
+// Boot timeline (ms): body on at 0, sections rise 80-400, screen flickers
+// on at 350, then a sweep writes the demo beat left to right, one column
+// every 60ms from 700. BOOT_MS in Intro.component.jsx waits for the last pad.
+.Machine.is-booting {
+  animation: boot-on 0.5s $ease-out;
+
+  > .Header,
+  > .Screen,
+  > .Machine-crow > *,
+  > .Board {
+    animation: boot-rise 0.4s $ease-out backwards;
+  }
+  > .Header {
+    animation-delay: 80ms;
+  }
+  > .Screen {
+    animation-delay: 140ms;
+  }
+  @for $i from 1 through 5 {
+    > .Machine-crow > :nth-child(#{$i}) {
+      animation-delay: #{160 + $i * 40}ms;
+    }
+  }
+  > .Board {
+    animation-delay: 400ms;
+  }
+
+  .Screen-main {
+    animation: boot-flicker 0.45s step-end 350ms backwards;
+  }
+  .Board-Channel__item[aria-pressed="true"] {
+    animation: boot-write 0.26s $ease-out backwards;
+  }
+  @for $i from 0 through 15 {
+    .Board-Channel__item[data-step="#{$i}"] {
+      animation-delay: #{700 + $i * 60}ms;
+    }
+    .Board-TopBar__label:nth-child(#{$i + 1}) .Board-TopBar__led {
+      animation: boot-led 0.3s ease-out #{700 + $i * 60}ms;
+    }
+  }
+}
+
+@keyframes boot-on {
+  from {
+    opacity: 0.12;
+    transform: scale(0.98);
+  }
+}
+@keyframes boot-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+// an LCD warming up: a few hard blinks, no fades
+@keyframes boot-flicker {
+  0% {
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.8;
+  }
+  35% {
+    opacity: 0.1;
+  }
+  55% {
+    opacity: 1;
+  }
+  70% {
+    opacity: 0.35;
+  }
+  85% {
+    opacity: 1;
+  }
+}
+// a lit pad starts unlit and pressed, then lands in its checked color
+@keyframes boot-write {
+  from {
+    background-color: rgba(255, 255, 255, 0.04);
+    transform: scale(0.8);
+  }
+}
+@keyframes boot-led {
+  30% {
+    background-color: $Primary-200;
+    box-shadow: 0 0 6px rgba(209, 249, 152, 0.45);
+  }
+}
+
+.Power {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 16px;
+  text-align: center;
+  background: radial-gradient(circle at 50% 45%, rgba(18, 18, 18, 0.5), rgba(18, 18, 18, 0.94) 60%);
+  transition: opacity 0.3s $ease-out;
+
+  &.is-leaving {
+    opacity: 0;
+    pointer-events: none;
+  }
+  &__brand {
+    font-size: 11px;
+    letter-spacing: 0.32em;
+    margin-bottom: 10px;
+    @include fontdp(0.5);
+  }
+  &__button {
+    position: relative;
+    width: 88px;
+    height: 88px;
+    border: none;
+    border-radius: 50%;
+    padding: 0;
+    background-color: #1d1d1d;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08), 0 6px 18px black;
+    color: $Primary-200;
+    cursor: pointer;
+    transition: transform 0.12s $ease-out;
+
+    &:active {
+      transform: scale(0.96);
+    }
+    &:focus-visible {
+      outline: 2px solid $Primary-200;
+      outline-offset: 10px;
+    }
+    // breathing ring: the one thing on screen asking to be pressed
+    &::after {
+      content: "";
+      position: absolute;
+      inset: -6px;
+      border-radius: 50%;
+      box-shadow: 0 0 0 2px $Primary-200, 0 0 18px rgba(209, 249, 152, 0.5);
+      opacity: 0.2;
+      animation: power-breathe 2.4s ease-in-out infinite;
+    }
+    svg {
+      width: 30px;
+      height: 30px;
+      display: block;
+      margin: auto;
+    }
+  }
+  &__label {
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 0.2em;
+    color: $Primary-200;
+    margin-top: 6px;
+  }
+  &__hint {
+    font-size: 12.5px;
+    @include fontdp(0.5);
+  }
+  &__skip {
+    margin-top: 10px;
+    border: none;
+    background: none;
+    font: inherit;
+    font-size: 12px;
+    text-decoration: underline;
+    @include fontdp(0.35);
+    cursor: pointer;
+
+    &:hover {
+      @include fontdp(0.7);
+    }
+  }
+}
+
+@keyframes power-breathe {
+  50% {
+    opacity: 0.9;
+  }
+}
+
+// Spotlight and card sit in page coordinates (absolute, placed from JS) and
+// never block clicks outside the card: the machine stays playable mid-tour.
+// On phones the card is fixed instead (below).
+// Below the Library drawer (9/10) and MUI menus, above the sticky ruler (5).
+.Tour-spot {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 8;
+  pointer-events: none;
+  border-radius: 12px;
+  box-shadow: 0 0 0 2px $Primary-200, 0 0 0 9999px rgba(0, 0, 0, 0.6);
+  transition: transform 0.45s $ease-in-out, width 0.45s $ease-in-out,
+    height 0.45s $ease-in-out, opacity 0.2s $ease-out;
+  animation: tour-fade 0.3s $ease-out;
+
+  // welcome card: no module, the whole machine dims
+  &.is-empty {
+    box-shadow: 0 0 0 0 transparent, 0 0 0 9999px rgba(0, 0, 0, 0.6);
+  }
+}
+
+.Tour-card {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 8;
+  width: min(320px, calc(100vw - 32px));
+  padding: 16px 18px 14px;
+  background-color: #222222;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.7);
+  @include fontdp(0.87);
+  transition: opacity 0.2s $ease-out;
+  animation: tour-card 0.25s $ease-out;
+
+  &__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  &__title {
+    font-size: 11px;
+    font-weight: bold;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: $Primary-200;
+  }
+  &__count {
+    font-family: $Mono;
+    font-size: 11px;
+    @include fontdp(0.35);
+  }
+  &__text {
+    margin: 0;
+    font-size: 13.5px;
+    line-height: 1.5;
+  }
+  &__buttons {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 14px;
+  }
+  &__skip {
+    margin-right: auto;
+    padding: 0;
+    border: none;
+    background: none;
+    font: inherit;
+    font-size: 12px;
+    @include fontdp(0.4);
+    cursor: pointer;
+
+    &:hover {
+      @include fontdp(0.7);
+    }
+  }
+  &__next {
+    color: $Primary-200;
+  }
+}
+
+// Phones pin the card where it lands (Intro.component.jsx), so it stays on
+// screen while the page scrolls under it. Same breakpoint as the JS.
+@media (max-width: 600px) {
+  .Tour-card {
+    position: fixed;
+  }
+}
+
+.Tour.is-leaving .Tour-spot,
+.Tour.is-leaving .Tour-card {
+  opacity: 0;
+}
+
+@keyframes tour-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes tour-card {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+// Reduced motion: the machine simply fades on; nothing moves or blinks.
+@media (prefers-reduced-motion: reduce) {
+  .Machine.is-booting {
+    animation: tour-fade 0.3s ease;
+  }
+  .Machine.is-booting *,
+  .Power__button::after {
+    animation: none !important;
+  }
+  .Tour-spot {
+    transition: opacity 0.2s ease;
+  }
+  .Tour-card {
+    animation: tour-fade 0.2s ease;
   }
 }

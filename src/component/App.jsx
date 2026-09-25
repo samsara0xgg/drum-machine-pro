@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import "./App.scss";
 import Header from "./Header.component";
 import ControlPanel from "./ControlPanel.component";
@@ -6,6 +6,7 @@ import Display from "./Display.component";
 import Pattern from "./Pattern.component";
 import Board from "./Board.component";
 import Library from "./Library.component";
+import Intro, { firstPhase } from "./Intro.component";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 
 // MUI theme still drives the dark menus, select and snackbar
@@ -26,10 +27,13 @@ const theme = createTheme({
 });
 
 const App = () => {
+  const [intro, setIntro] = useState(firstPhase);
+  const machineState = { off: " is-off", boot: " is-booting" }[intro] || "";
+
   return (
     <ThemeProvider theme={theme}>
-      <div className="Machine">
-        <Header />
+      <div className={"Machine" + machineState}>
+        <Header onTour={() => setIntro("tour")} />
         <Display />
         <div className="Machine-crow">
           <ControlPanel />
@@ -37,8 +41,10 @@ const App = () => {
           <Pattern />
         </div>
         <Board />
+        <div className="Machine-glow" aria-hidden="true"></div>
       </div>
       <Library />
+      <Intro phase={intro} setPhase={setIntro} />
     </ThemeProvider>
   );
 };

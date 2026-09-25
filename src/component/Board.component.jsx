@@ -11,6 +11,8 @@ import {
 } from "@dnd-kit/sortable";
 import {
   CHANNEL_LIMIT,
+  fitVoice,
+  isSynth,
   newChannel,
   loadKitBuffers,
   loadSample,
@@ -18,6 +20,28 @@ import {
 } from "../service/kits";
 import { Context } from "../Context";
 import { pageForStep, stepsForPage } from "../service/mobile";
+import { paint } from "../service/groove";
+import { DEFAULT_NOTE } from "../service/bass808";
+import BassPanel from "./Board/BassPanel.component";
+
+// One brush row: the value new pads are painted with.
+const Brush = ({ label, options, value, onChange }) => (
+  <div className="Board-Brush" role="group" aria-label={label}>
+    <span className="Board-Brush__label">{label}</span>
+    {options.map(([v, text]) => (
+      <button
+        key={v}
+        className={"Board-Brush__button" + (v === value ? " is-active" : "")}
+        data-kind={label}
+        data-value={v}
+        aria-pressed={v === value}
+        onClick={() => onChange(v)}
+      >
+        {text}
+      </button>
+    ))}
+  </div>
+);
 
 const Board = () => {
   const {
@@ -33,6 +57,13 @@ const Board = () => {
   } = useContext(Context);
 
   const isMobile = useMediaQuery("(max-width:600px)");
+  // Brushes: clicked pads are drawn at this level (1 soft, 2 mid, 3 hard)
+  // and roll (hits per step, 1-4).
+  const [brush, setBrush] = useState(2);
+  const [rollBrush, setRollBrush] = useState(1);
+  // 808 rows also paint a note, and whether the note slides in.
+  const [noteBrush, setNoteBrush] = useState(DEFAULT_NOTE);
+  const [slideBrush, setSlideBrush] = useState(0);
   const [mobilePage, setMobilePage] = useState(0);
 
   // Follow the sounding group just four times per bar, not on every step.
@@ -79,7 +110,7 @@ const Board = () => {
 
   const setChannelSample = (uid, kit, slot) => {
     updateChannels((rows) =>
-      rows.map((c) => (c.uid === uid ? { ...c, kit, slot } : c))
+      rows.map((c) => (c.uid === uid ? fitVoice({ ...c, kit, slot }) : c))
     );
   };
 
@@ -87,13 +118,31 @@ const Board = () => {
     updateChannels((rows) => rows.filter((c) => c.uid !== uid));
   };
 
-  const toggleStep = (uid, step) => {
+  const paintStep = (uid, step) => {
     updateChannels((rows) =>
-      rows.map((c) =>
-        c.uid === uid
-          ? { ...c, steps: c.steps.map((on, i) => (i === step ? !on : on)) }
-          : c
-      )
+      rows.map((c) => {
+        if (c.uid !== uid) return c;
+        const synth = isSynth(c);
+        const next = paint(
+          {
+            level: c.steps[step],
+            roll: c.rolls[step],
+            ...(synth && { note: c.notes[step], slide: c.slides[step] }),
+          },
+          {
+            level: brush,
+            roll: rollBrush,
+            ...(synth && { note: noteBrush, slide: slideBrush }),
+          }
+        );
+        const set = (list, value) => list.map((v, i) => (i === step ? value : v));
+        return {
+          ...c,
+          steps: set(c.steps, next.level),
+          rolls: set(c.rolls, next.roll),
+          ...(synth && { notes: set(c.notes, next.note), slides: set(c.slides, next.slide) }),
+        };
+      })
     );
   };
 
@@ -128,6 +177,28 @@ const Board = () => {
           </button>
         ))}
       </div>
+      <div className="Board-tools">
+        <Brush
+          label="HIT"
+          options={[[1, "SOFT"], [2, "MID"], [3, "HARD"]]}
+          value={brush}
+          onChange={setBrush}
+        />
+        <Brush
+          label="ROLL"
+          options={[[1, "1"], [2, "2"], [3, "3"], [4, "4"]]}
+          value={rollBrush}
+          onChange={setRollBrush}
+        />
+      </div>
+      {channels.some(isSynth) && (
+        <BassPanel
+          note={noteBrush}
+          setNote={setNoteBrush}
+          slide={slideBrush}
+          setSlide={setSlideBrush}
+        />
+      )}
       <div id="scroll">
         <TopBar currentStep={currentStep} seekTo={seekTo} stepIndices={visibleSteps} />
         <DndContext collisionDetection={closestCenter} onDragEnd={onDragEnd}>
@@ -141,7 +212,7 @@ const Board = () => {
                   key={channel.uid}
                   channel={channel}
                   currentStep={currentStep}
-                  toggleStep={toggleStep}
+                  paintStep={paintStep}
                   toggleFlag={toggleFlag}
                   deleteChannel={deleteChannel}
                   setSample={setChannelSample}

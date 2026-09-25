@@ -2,6 +2,7 @@ import React, { useContext } from "react";
 import Knob from "./ControlPanel/Knob.component";
 import SelectBox from "./ControlPanel/SelectBox.component";
 import { Context } from "../Context";
+import { filterLabel } from "../service/groove";
 
 const ControlPanel = () => {
   const {
@@ -15,6 +16,10 @@ const ControlPanel = () => {
     setPan,
     reverb,
     setReverb,
+    swing,
+    setSwing,
+    filter,
+    setFilter,
     flashParam,
     flashBpm,
   } = useContext(Context);
@@ -25,6 +30,8 @@ const ControlPanel = () => {
       onChange: (v) => { setBpm(v); flashBpm(); } },
     { name: "VOL", min: 0, max: 100, step: 1, defaultValue: 80, value: volume,
       onChange: (v) => { setVolume(v); flashParam("MASTER VOLUME", "" + v); } },
+    { name: "SWING", min: 50, max: 75, step: 1, defaultValue: 50, value: swing,
+      onChange: (v) => { setSwing(v); flashParam("SWING", v === 50 ? "STRAIGHT" : v + "%"); } },
   ];
   const fx = [
     { name: "PITCH", min: -24, max: 24, step: 1, defaultValue: 0, value: pitch,
@@ -36,6 +43,8 @@ const ControlPanel = () => {
       } },
     { name: "REVERB", min: 0, max: 1, step: 0.01, defaultValue: 0, value: reverb,
       onChange: (v) => { setReverb(v); flashParam("REVERB", Math.round(v * 100) + "%"); } },
+    { name: "FILTER", min: -100, max: 100, step: 1, defaultValue: 0, value: filter,
+      onChange: (v) => { setFilter(v); flashParam("FILTER", filterLabel(v)); } },
   ];
 
   return (
