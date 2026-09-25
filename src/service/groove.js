@@ -21,6 +21,9 @@ export const paint = (step, brush) =>
     ? { ...step, level: 0, roll: 1 }
     : { ...step, ...brush };
 
+// A row sounds unless it is muted, or another row is soloed and it isn't.
+export const isSilent = (channel, anySolo) => channel.muted || (anySolo && !channel.solo);
+
 // Swing (MPC-style %) pushes every second 16th late: 50 is straight,
 // ~66 a triplet feel, 75 the maximum. Returns the delay in seconds.
 export const swingDelay = (step, secondsPer16th, swing) =>
