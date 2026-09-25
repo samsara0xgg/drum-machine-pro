@@ -273,7 +273,7 @@ const Intro = ({ phase, setPhase }) => {
       <div className="Power__hint">
         Plays a short 808 trap beat
         <br />
-        Volume around 50%: it starts quiet, then the 808 hits
+        Volume around 60%: it starts quiet, then the 808 hits
       </div>
       <button className="Power__skip" onClick={skip}>
         Skip intro
