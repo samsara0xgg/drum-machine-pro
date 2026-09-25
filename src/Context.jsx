@@ -9,12 +9,14 @@ const Context = React.createContext();
 const AudioContextClass = window.AudioContext || window.webkitAudioContext;
 const audioCtx = new AudioContextClass(); // Web Audio API
 const masterGain = audioCtx.createGain();
-// Brick-wall limiter at -1 dBFS: hard hits stacking up would otherwise clip.
+// Limiter: hard hits stacking up would otherwise clip. Web Audio's compressor
+// adds its own makeup gain (+3.4 dB here) and 20:1 still lets overs creep up,
+// so a -6 dB threshold is what holds the output peaks near -1 dBFS.
 const limiter = new DynamicsCompressorNode(audioCtx, {
-  threshold: -1,
+  threshold: -6,
   knee: 0,
   ratio: 20,
-  attack: 0.002,
+  attack: 0,
   release: 0.1,
 });
 // DJ filter on the whole mix (FILTER knob, and the demo song's sweeps).

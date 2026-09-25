@@ -23,6 +23,10 @@ const PUNCH = 3; // a hit starts this many times above its note...
 const PUNCH_TIME = 0.04; // ...and drops onto it this fast
 const RELEASE = 0.006; // how fast a cut note fades, short but click-free
 const RESTRIKE = 0.01; // a slide's re-accent
+const TAIL_FADE = 0.005; // drive keeps a tail audible, so fade it out before the stop
+// Drive normalizes a full-scale hit to peak at 1, louder than any drum; this
+// sits the 808 under the kick so the pair doesn't slam the master limiter.
+const LEVEL = 0.5;
 const DRIVE_RANGE = 10; // the shaper curve spans tanh over +-10
 
 // tanh over [-DRIVE_RANGE, DRIVE_RANGE]; the drive gain scales the signal
@@ -67,7 +71,7 @@ export const createBass = (ctx, output) => {
     setDrive(amount) {
       const { input, makeup: level } = driveGains(amount);
       drive.gain.setTargetAtTime(input, ctx.currentTime, 0.02);
-      makeup.gain.setTargetAtTime(level, ctx.currentTime, 0.02);
+      makeup.gain.setTargetAtTime(level * LEVEL, ctx.currentTime, 0.02);
     },
 
     // Calls must come in time order (the scheduler's are). decay and glide
@@ -86,6 +90,7 @@ export const createBass = (ctx, output) => {
         v.amp.gain.linearRampToValueAtTime(peak, t + RESTRIKE);
         v.amp.gain.setTargetAtTime(0, t + RESTRIKE, tau);
         Object.assign(v, { freq: f, peak, tau, decayFrom: t + RESTRIKE, end: t + RESTRIKE + decay });
+        v.amp.gain.setTargetAtTime(0, v.end, TAIL_FADE);
         v.osc.stop(v.end + 0.05); // a later stop() replaces the earlier one
         return;
       }
@@ -101,6 +106,7 @@ export const createBass = (ctx, output) => {
       osc.connect(amp).connect(drive);
       osc.start(t);
       const end = t + ATTACK + decay;
+      amp.gain.setTargetAtTime(0, end, TAIL_FADE);
       osc.stop(end + 0.05);
       voice = { osc, amp, freq: f, peak, tau, decayFrom: t + ATTACK, end };
     },
