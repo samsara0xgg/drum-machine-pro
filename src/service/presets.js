@@ -332,3 +332,62 @@ export const PRESETS = [
   },
 ];
 
+// The power-on demo: one 808 lineup across five pads, written as drum tabs.
+// One character per 16th: "-" rest, 1 soft, 2 mid, 3 hard; spaces split beats.
+const LINEUP = { kick: 0, snare: 1, clap: 4, hat: 2, openHat: 3, rim: 7, highTom: 8, lowTom: 10 };
+const tabSteps = (tab = "---- ---- ---- ----") =>
+  [...tab.replace(/ /g, "")].map((c) => (c === "-" ? 0 : Number(c)));
+const section = (tabs) => ({
+  kit: "808",
+  rows: Object.entries(LINEUP).map(([name, slot]) => ({
+    kit: "808",
+    slot,
+    steps: tabSteps(tabs[name]),
+    muted: false,
+    solo: false,
+  })),
+});
+
+const intro = section({
+  kick:    "3--- ---- ---- ----",
+  hat:     "2-1- 2-1- 2-1- 2-11",
+  rim:     "---- 2--- ---- 2---",
+});
+const groove = section({
+  kick:    "3--- ---2 --3- ----",
+  snare:   "---- 3--- -1-- 3--1",
+  hat:     "3-11 2-1- 3-11 2---",
+  openHat: "---- ---- ---- --2-",
+});
+const variation = section({
+  kick:    "3--2 ---2 --3- -1--",
+  snare:   "---- 3--- -1-- 3--1",
+  hat:     "3-11 2-1- 3-11 2---",
+  openHat: "---- --1- ---- --2-",
+  rim:     "---2 ---- ---2 ----",
+});
+const fill = section({
+  kick:    "3--- ---2 ---- ----",
+  snare:   "---- 3--- ---- -123",
+  clap:    "---- ---- ---- ---3",
+  hat:     "3-1- 2-1- ---- ----",
+  highTom: "---- ---- 3-2- ----",
+  lowTom:  "---- ---- ---2 3---",
+});
+const chorus = section({
+  kick:    "3--- ---2 --3- --1-",
+  snare:   "---- 3--- -1-- 3--1",
+  clap:    "---- 2--- ---- 3---",
+  hat:     "3111 2-11 3111 2---",
+  openHat: "---- ---- ---- --2-",
+  rim:     "---- --1- ---- ----",
+});
+
+// Pads 1-5 = intro, groove, variation, fill, chorus. order is one pad per
+// bar: a two-bar intro, two 4-bar groove phrases (ending in the variation,
+// then the fill), a chorus phrase ending in the fill, then back to the groove.
+export const DEMO_SONG = {
+  payload: payload(90, [intro, groove, variation, fill, chorus], { swing: 57, reverb: 0.12 }),
+  order: [0, 0, 1, 1, 1, 2, 1, 1, 1, 3, 4, 4, 4, 3],
+  loopFrom: 2,
+};

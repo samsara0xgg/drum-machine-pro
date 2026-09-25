@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useRef, useState } from "react";
 import { Context } from "../Context";
 import { KITS, loadSample, sampleDef } from "../service/kits";
 import { ensureAudioReady } from "../service/audio";
-import { VELOCITY_GAIN, swingDelay } from "../service/groove";
+import { VELOCITY_GAIN, nextBar, swingDelay } from "../service/groove";
 
 const Display = () => {
   const {
@@ -19,6 +19,8 @@ const Display = () => {
     currentStep,
     setCurrentStep,
     nextStepRef,
+    songRef,
+    showPattern,
     pitch,
     swing,
     fxIn,
@@ -135,7 +137,11 @@ const Display = () => {
     let rafID;
     const draw = () => {
       while (drawQueue.length && drawQueue[0].time <= audioCtx.currentTime) {
-        setCurrentStep(drawQueue.shift().step);
+        const { step, pattern } = drawQueue.shift();
+        setCurrentStep(step);
+        // A song bar lights its pad as it starts sounding, unless the song
+        // was stopped by a hand edit in the meantime.
+        if (pattern !== undefined && songRef.current) showPattern(pattern);
       }
       rafID = requestAnimationFrame(draw);
     };
@@ -148,16 +154,20 @@ const Display = () => {
       // place and a seek from the ruler takes effect within one tick.
       // nextNoteTime stays on the straight grid; swing only delays when an
       // odd step sounds (and lights), so the grid never drifts.
+      // While a song plays, it picks the pattern for each bar instead of the
+      // pad the user selected.
       while (nextNoteTime < audioCtx.currentTime + scheduleAheadTime) {
         const step = nextStepRef.current;
-        const pattern = patternNumRef.current;
+        const song = songRef.current;
+        const pattern = song ? song.order[song.pos] : patternNumRef.current;
         // 16 steps per bar, 4 steps per beat
         const secondsPer16th = 60.0 / bpmRef.current / 4;
         const time = nextNoteTime + swingDelay(step, secondsPer16th, swingRef.current);
         scheduleNote(patternsRef.current[pattern].channels, step, time);
-        drawQueue.push({ step, time });
+        drawQueue.push({ step, time, pattern: song ? pattern : undefined });
         nextNoteTime += secondsPer16th;
         nextStepRef.current = (step + 1) % 16;
+        if (song && nextStepRef.current === 0) song.pos = nextBar(song, song.pos);
       }
       timerID = setTimeout(scheduler, lookahead);
     };
@@ -169,7 +179,7 @@ const Display = () => {
       clearTimeout(timerID);
       cancelAnimationFrame(rafID);
     };
-  }, [started, audioCtx, fxIn, buffersRef, setCurrentStep, nextStepRef]);
+  }, [started, audioCtx, fxIn, buffersRef, setCurrentStep, nextStepRef, songRef, showPattern]);
 
   return (
     <div className="Screen">

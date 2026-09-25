@@ -1,19 +1,18 @@
 import React, { useContext, useLayoutEffect, useRef, useState } from "react";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import { Context } from "../Context";
-import { PRESETS } from "../service/presets";
+import { DEMO_SONG } from "../service/presets";
 import { loadSample, sampleDef } from "../service/kits";
 import { ensureAudioReady } from "../service/audio";
 
-// First visit: power screen -> boot animation writes the demo beat onto the
-// pads -> it starts playing -> a tour explains each module.
+// First visit: power screen -> boot animation writes the demo song's intro
+// onto the pads -> the song plays through pads 1-5 -> a tour explains each module.
 // Phases: off -> boot -> demo -> tour -> done ("?" in the header reopens the tour).
 const SEEN_KEY = "drum-machine-intro-seen";
-const DEMO = PRESETS.find((p) => p.name === "808 Boom Bap");
 // Matches the boot timeline in App.scss: the last pad lands at 700 + 15 * 60 + 260 ms.
 const BOOT_MS = 1900;
 // Let one bar of the demo play before the tour dims the machine.
-const BAR_MS = (60 / DEMO.payload.bpm) * 4 * 1000;
+const BAR_MS = (60 / DEMO_SONG.payload.bpm) * 4 * 1000;
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -47,8 +46,8 @@ const STEPS = [
   {
     target: ".Machine-card--master",
     title: "Master",
-    text: "TEMPO sets the speed in BPM, VOL the overall level, SWING pushes every second 16th late for a laid-back groove (50% is straight). Drag a knob up or right to turn it; double-click to reset.",
-    mobileText: "TEMPO sets the speed in BPM, VOL the overall level, SWING pushes every second 16th late for a laid-back groove (50% is straight).",
+    text: "TEMPO sets the speed in BPM, VOL the overall level. SWING pushes every second 16th late for a laid-back groove: 50% is straight, around 57% is this demo. Drag a knob up or right to turn it; double-click to reset.",
+    mobileText: "TEMPO sets the speed in BPM, VOL the overall level. SWING pushes every second 16th late for a laid-back groove: 50% is straight, around 57% is this demo.",
   },
   {
     target: ".Machine-card--fx",
@@ -63,7 +62,7 @@ const STEPS = [
   {
     target: ".Machine-card--pattern",
     title: "Patterns",
-    text: "12 pattern slots, each with its own beat and kit. Build a groove on 1 and a fill on 2, then switch between them while it plays.",
+    text: "12 pattern slots, each with its own beat and kit. The demo is a song across pads 1 to 5: intro, groove, variation, fill, chorus. Click a pad (or edit the grid) and the song stays on that section.",
   },
   {
     target: ".Header",
@@ -197,7 +196,7 @@ const Tour = ({ onClose }) => {
 };
 
 const Intro = ({ phase, setPhase }) => {
-  const { audioCtx, buffersRef, hydrate, setStarted, toast } = useContext(Context);
+  const { audioCtx, buffersRef, hydrate, songRef, setStarted, toast } = useContext(Context);
   const reduce = useMediaQuery("(prefers-reduced-motion: reduce)");
 
   const markSeen = () => {
@@ -210,12 +209,14 @@ const Intro = ({ phase, setPhase }) => {
     // resume() must start inside the click itself (iOS), before any await.
     const audio = ensureAudioReady(audioCtx);
     markSeen();
-    hydrate(DEMO.payload);
+    hydrate(DEMO_SONG.payload);
+    songRef.current = { order: DEMO_SONG.order, loopFrom: DEMO_SONG.loopFrom, pos: 0 };
     setPhase("boot");
+    const urls = new Set(
+      DEMO_SONG.payload.patterns.flatMap((p) => p.channels.map((c) => sampleDef(c).sample))
+    );
     const samples = Promise.all(
-      DEMO.payload.patterns[0].channels.map((channel) =>
-        loadSample(audioCtx, sampleDef(channel).sample, buffersRef.current)
-      )
+      [...urls].map((url) => loadSample(audioCtx, url, buffersRef.current))
     );
     try {
       await Promise.all([audio, samples, wait(reduce ? 300 : BOOT_MS)]);
@@ -246,7 +247,7 @@ const Intro = ({ phase, setPhase }) => {
         </svg>
       </button>
       <div className="Power__label">POWER ON</div>
-      <div className="Power__hint">Starts a classic 808 boom bap · sound on</div>
+      <div className="Power__hint">Plays a short 808 boom bap song · sound on</div>
       <button className="Power__skip" onClick={skip}>
         Skip intro
       </button>

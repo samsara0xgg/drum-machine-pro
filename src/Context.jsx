@@ -75,9 +75,23 @@ const ContextProvider = ({ children }) => {
   // 12 independent patterns; each owns its kit and its channel rows:
   // { kit, channels: [{ uid, kit, slot, steps, muted, solo }] }
   // (rows carry their own kit too, so cross-kit mixing per row is allowed)
-  const [patterns, setPatterns] = useState(defaultPatterns);
+  const [patterns, setPatternsState] = useState(defaultPatterns);
 
-  const [patternNum, setPatternNum] = useState(0);
+  const [patternNum, showPattern] = useState(0);
+
+  // The demo song: { order, loopFrom, pos } while the scheduler advances
+  // patterns bar by bar, null otherwise. Every hand edit or pattern pick goes
+  // through the two setters below and ends it, so the section being touched
+  // stays put. The scheduler itself moves the display with showPattern.
+  const songRef = useRef(null);
+  const setPatterns = (next) => {
+    songRef.current = null;
+    setPatternsState(next);
+  };
+  const setPatternNum = (n) => {
+    songRef.current = null;
+    showPattern(n);
+  };
   // Step the playhead is on right now (-1 = stopped); driven by the audio
   // engine's draw queue so visuals track what is actually sounding.
   const [currentStep, setCurrentStep] = useState(-1);
@@ -297,6 +311,8 @@ const ContextProvider = ({ children }) => {
         setPatterns,
         patternNum,
         setPatternNum,
+        showPattern,
+        songRef,
         currentStep,
         setCurrentStep,
         nextStepRef,
