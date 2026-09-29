@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from "react";
+import { PRESETS } from "../service/presets";
 
 // Mini pads for the legend, drawn like the grid's (see .Help-pad).
 const Pad = ({ level = 2, roll = 1, note }) => (
@@ -64,7 +65,8 @@ const Help = ({ open, onClose, onTour }) => {
             <p>
               HIT and ROLL above the grid are brushes: new pads take their settings. A pad
               that already matches is cleared, any other is repainted. To take a roll off a
-              pad, set ROLL to 1 and click the pad.
+              pad, set ROLL to 1 and click the pad. While stopped, a pad plays once as it
+              lights, so you can hear what you drew.
             </p>
           </section>
 
@@ -86,8 +88,8 @@ const Help = ({ open, onClose, onTour }) => {
             <h3>Rows</h3>
             <p>
               Click a row's name to swap its sound for any kit's. The green dot mutes the
-              row, the red dot solos it. Drag ≡ to reorder, ✕ deletes. ADD CHANNEL+ adds
-              rows, up to 20.
+              row, the red dot solos it; rows that won't sound dim. Drag ≡ to reorder, ✕
+              deletes. ADD CHANNEL+ adds rows, up to 20.
             </p>
           </section>
 
@@ -114,9 +116,10 @@ const Help = ({ open, onClose, onTour }) => {
           <section className="Help-section">
             <h3>Library</h3>
             <p>
-              ☰ holds the preset songs and your saved patterns (kept in this browser).
-              SAVE stores the whole machine, UPDATE overwrites the one you loaded, NEW
-              starts blank, ⇪ copies a share link.
+              ☰ holds {PRESETS.length} preset songs in different styles, each with what to
+              listen for, and your saved patterns (kept in this browser). SAVE stores the
+              whole machine, UPDATE overwrites the one you loaded, NEW starts blank, ⇪
+              copies a share link.
             </p>
           </section>
 

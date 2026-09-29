@@ -1,4 +1,4 @@
-// Built-in Library songs. Each payload is a full v2 snapshot, same shape as a
+// Built-in Library songs, each a different style. Each payload is a full v2 snapshot, same shape as a
 // share link, so loading one goes through the same hydrate() as /p/:slug.
 // Every preset is a whole song: `bars` says which pad plays each bar (and
 // how the FILTER knob moves across it), the way the power-on demo plays.
@@ -314,4 +314,319 @@ const HOUSE = {
   loopFrom: 2,
 };
 
-export const PRESETS = [DEMO_SONG, BOOM_BAP, HOUSE];
+// ---- Lo-fi in D minor: lazy 60% swing, the whole song under a gentle
+// low-pass, and a warm 808 walking the roots of Dm7, G7, Cmaj7, Am7. The
+// break dips the filter further, then brings it back. ----
+const lofi = tabs("hiphop", {
+  kick: ["hiphop", 0],
+  bass: ["synth", 0],
+  snare: ["hiphop", 1],
+  hat: ["hiphop", 5],
+  openHat: ["hiphop", 3],
+  rim: ["linndrum", 6],
+});
+
+const lofiIntro = lofi({
+  hat:     "2-1- 2-11 2-1- 2-11",
+  rim:     "---- 2--- ---- 2---",
+});
+const lofiA = lofi({
+  kick:    "3--- ---1 --2- ----",
+  bass:   { hits: "2--- ---- 2--- -1--", notes: "D1 G1 A1" },
+  snare:   "---- 3--- ---- 3---",
+  hat:     "2-1- 2-11 2-1- 2-11",
+  rim:     "---- ---- ---- ---1",
+});
+const lofiB = lofi({
+  kick:    "3--- ---1 --2- -1--",
+  bass:   { hits: "2--- ---- 2--- -1--", notes: "C2 A1 E1" },
+  snare:   "---- 3--- ---- 3--1",
+  hat:     "2-1- 2-11 2-1- 2---",
+  openHat: "---- ---- ---- --1-",
+});
+const lofiBreak = lofi({
+  bass:   { hits: "2--- ---- 2--- -1--", notes: "D1 G1 A1" },
+  hat:     "1-1- 1-11 1-1- 1-11",
+  rim:     "---- 2--- ---- 2---",
+});
+
+const LOFI = {
+  name: "Lo-fi Study",
+  meta: "Hip Hop + Linn · 78 · 4 pads",
+  about:
+    "Late-night lo-fi at 60% SWING, the whole song under a soft low-pass (FILTER) with plenty of REVERB. A warm 808 walks the chords; the break dips the filter even lower.",
+  payload: payload(
+    78,
+    [lofiIntro, lofiA, lofiB, lofiBreak],
+    { swing: 60, reverb: 0.3, filter: -70 },
+    { decay: 1.6, drive: 10, glide: 120 }
+  ),
+  bars: [
+    { pad: 0, filter: [-70, -60] },
+    { pad: 0, filter: [-60, -35] },
+    { pad: 1 },
+    { pad: 2 },
+    { pad: 1 },
+    { pad: 2 },
+    { pad: 3, filter: [-35, -60] },
+    { pad: 2, filter: [-60, -35] },
+    { pad: 1 },
+    { pad: 2 },
+  ],
+  loopFrom: 2,
+};
+
+// ---- Reggaeton in A minor: the dembow (kick on every beat, snare on the
+// "boom-ch-boom-chick"), an 808 following the snare through Am, F, C, G,
+// and timbale-style tom fills. The intro is thin, through a high-pass. ----
+const reggaeton = tabs("808", {
+  kick: ["808", 0],
+  bass: ["synth", 0],
+  snare: ["808", 1],
+  clap: ["808", 4],
+  hat: ["808", 2],
+  openHat: ["808", 3],
+  rim: ["808", 7],
+  hiTom: ["808", 8],
+  midTom: ["808", 9],
+  lowTom: ["808", 10],
+});
+
+const rgIntro = reggaeton({
+  hat:     "2-1- 2-1- 2-1- 2-1-",
+  rim:     "---2 --2- ---2 --2-",
+});
+const rgVerseA = reggaeton({
+  kick:    "3--- 3--- 3--- 3---",
+  bass:   { hits: "3--2 --2- 3--2 --2-", notes: "A1 A1 A1 F1 F1 F1" },
+  snare:   "---2 --2- ---2 --2-",
+  hat:     "2-1- 2-1- 2-1- 2-1-",
+});
+const rgVerseB = reggaeton({
+  kick:    "3--- 3--- 3--- 3---",
+  bass:   { hits: "3--2 --2- 3--2 --2-", notes: "C2 C2 C2 G1 G1 G1" },
+  snare:   "---2 --2- ---2 --2-",
+  hat:     "2-1- 2-1- 2-1- 2---",
+  openHat: "---- ---- ---- --2-",
+});
+const rgHookA = reggaeton({
+  kick:    "3--- 3--- 3--- 3---",
+  bass:   { hits: "3--2 --2- 3--2 --2-", notes: "A1 A1 A1 F1 F1 F1" },
+  snare:   "---3 --3- ---3 --3-",
+  clap:    "---2 --2- ---2 --2-",
+  hat:     "2121 2121 2121 2121",
+});
+const rgHookB = reggaeton({
+  kick:    "3--- 3--- 3--- 3---",
+  bass:   { hits: "3--2 --2- 3--2 --2-", notes: "C2 C2 C2 G1 G1 G1" },
+  snare:   "---3 --3- ---3 --3-",
+  clap:    "---2 --2- ---2 --2-",
+  hat:     "2121 2121 2121 21--",
+  openHat: "---- ---- ---- --2-",
+});
+// the toms tumble down over beats 3 and 4 into the next section
+const rgFill = reggaeton({
+  kick:    "3--- 3--- 3--- ----",
+  bass:   { hits: "3--2 --2- 3--- ----", notes: "C2 C2 C2 G1" },
+  snare:   "---2 --2- ---- ----",
+  hat:     "2-1- 2-1- ---- ----",
+  hiTom:   "---- ---- 3-2- ----",
+  midTom:  "---- ---- ---- 3-2-",
+  lowTom:  "---- ---- ---- ---3",
+});
+
+const REGGAETON = {
+  name: "Reggaeton",
+  meta: "808 · 95 · 6 pads",
+  about:
+    "The dembow beat: kick on every beat, snare on the boom-ch-boom-chick. It opens thin through a high-pass (FILTER right), then an 808 follows the snare and tom fills lead into the hook.",
+  payload: payload(
+    95,
+    [rgIntro, rgVerseA, rgVerseB, rgHookA, rgHookB, rgFill],
+    { reverb: 0.08, filter: 70 },
+    { decay: 0.5, drive: 50, glide: 60 }
+  ),
+  bars: [
+    { pad: 0, filter: [70, 70] },
+    { pad: 0, filter: [70, 35] },
+    { pad: 1, filter: [0, 0] },
+    { pad: 2 },
+    { pad: 1 },
+    { pad: 5 },
+    { pad: 3 },
+    { pad: 4 },
+    { pad: 3 },
+    { pad: 5 },
+  ],
+  loopFrom: 2,
+};
+
+// ---- Amapiano in F minor: the 808 plays the log drum, bending in and out
+// of notes with slides; shakers ride a light 54% swing. Two bars of log
+// drum alone, then the drop brings in open hats and cowbell. ----
+const amapiano = tabs("707", {
+  kick: ["707", 0],
+  bass: ["synth", 0],
+  clap: ["707", 4],
+  rim: ["808", 7],
+  shaker: ["707", 5],
+  openHat: ["707", 3],
+  cowbell: ["808", 5],
+});
+
+const LOG_A = { hits: "3--2 --3- --2- 2-2-", notes: "F1 F2 C2 ~D#2 C2 ~G#1" };
+const LOG_B = { hits: "3--2 --3- --2- 2--2", notes: "C#2 C#1 G#1 ~C2 G#1 ~A#1" };
+const apIntro = amapiano({
+  shaker:  "1121 1121 1121 1121",
+  rim:     "---- --2- ---- -2-2",
+});
+const apA = amapiano({
+  kick:    "2--- 2--- 2--- 2---",
+  bass:    LOG_A,
+  clap:    "---- 2--- ---- 2---",
+  rim:     "---- --1- ---- --1-",
+  shaker:  "1121 1121 1121 1121",
+});
+const apB = amapiano({
+  kick:    "2--- 2--- 2--- 2---",
+  bass:    LOG_B,
+  clap:    "---- 2--- ---- 2---",
+  rim:     "---- --1- ---- -2-2",
+  shaker:  "1121 1121 1121 1121",
+});
+const apSolo = amapiano({
+  bass:    LOG_A,
+  shaker:  "1121 1121 1121 1121",
+  rim:     "---- --1- ---- --1-",
+});
+const apDropA = amapiano({
+  kick:    "3--- 3--- 3--- 3---",
+  bass:    LOG_A,
+  clap:    "---- 3--- ---- 3---",
+  shaker:  "1121 1121 1121 1121",
+  openHat: "--2- --2- --2- --2-",
+  cowbell: "2--1 --2- ---- ----",
+});
+const apDropB = amapiano({
+  kick:    "3--- 3--- 3--- 3---",
+  bass:    LOG_B,
+  clap:    "---- 3--- ---- 3---",
+  shaker:  "1121 1121 1121 1121",
+  openHat: "--2- --2- --2- --2-",
+  cowbell: "2--1 --2- ---- --1-",
+});
+
+const AMAPIANO = {
+  name: "Amapiano",
+  meta: "707 + 808 · 113 · 6 pads",
+  about:
+    "South African house. The 808 plays the log drum, its SLIDE notes bending up and down; the shakers sit on a light 54% SWING. Two bars of log drum alone, then the drop with cowbell.",
+  payload: payload(
+    113,
+    [apIntro, apA, apB, apSolo, apDropA, apDropB],
+    { swing: 54, reverb: 0.15, filter: -80 },
+    { decay: 0.45, drive: 60, glide: 70 }
+  ),
+  bars: [
+    { pad: 0, filter: [-80, -50] },
+    { pad: 0, filter: [-50, -10] },
+    { pad: 1, filter: [0, 0] },
+    { pad: 2 },
+    { pad: 1 },
+    { pad: 2 },
+    { pad: 3 },
+    { pad: 3, filter: [0, 45] },
+    { pad: 4, filter: [0, 0] },
+    { pad: 5 },
+    { pad: 4 },
+    { pad: 5 },
+  ],
+  loopFrom: 2,
+};
+
+// ---- 80s synth-pop in A minor on the LinnDrum: an 808 jumping octaves on
+// every eighth through Am, F, C, G (a short DECAY makes it a pluck), big
+// reverb, a tambourine on the chorus and a tom fill back to the top. ----
+const neon = tabs("linndrum", {
+  kick: ["linndrum", 0],
+  bass: ["synth", 0],
+  snare: ["linndrum", 1],
+  clap: ["linndrum", 4],
+  hat: ["linndrum", 2],
+  tamb: ["linndrum", 7],
+  hiTom: ["linndrum", 8],
+  midTom: ["linndrum", 9],
+  lowTom: ["linndrum", 10],
+});
+
+const OCTAVES_A = { hits: "2-1- 2-1- 2-1- 2-1-", notes: "A1 A2 A1 A2 F1 F2 F1 F2" };
+const OCTAVES_B = { hits: "2-1- 2-1- 2-1- 2-1-", notes: "C1 C2 C1 C2 G1 G2 G1 G2" };
+const neIntro = neon({
+  kick:    "3--- ---- 3--- ----",
+  hat:     "2121 2121 2121 2121",
+});
+const neVerseA = neon({
+  kick:    "3--- ---- 3--- ----",
+  bass:    OCTAVES_A,
+  snare:   "---- 3--- ---- 3---",
+  hat:     "2121 2121 2121 2121",
+});
+const neVerseB = neon({
+  kick:    "3--- ---- 3--- ----",
+  bass:    OCTAVES_B,
+  snare:   "---- 3--- ---- 3---",
+  hat:     "2121 2121 2121 2121",
+});
+const neChorusA = neon({
+  kick:    "3--- --2- 3--- ----",
+  bass:    OCTAVES_A,
+  snare:   "---- 3--- ---- 3---",
+  clap:    "---- 3--- ---- 3---",
+  hat:     "2121 2121 2121 2121",
+  tamb:    "--2- --2- --2- --2-",
+});
+const neChorusB = neon({
+  kick:    "3--- --2- 3--- ----",
+  bass:    OCTAVES_B,
+  snare:   "---- 3--- ---- 3---",
+  clap:    "---- 3--- ---- 3---",
+  hat:     "2121 2121 2121 2121",
+  tamb:    "--2- --2- --2- --2-",
+});
+const neFill = neon({
+  kick:    "3--- ---- 3--- ----",
+  bass:   { hits: "2-1- 2-1- 2--- ----", notes: "C1 C2 C1 C2 G1" },
+  snare:   "---- 3--- ---- ----",
+  hat:     "2121 2121 ---- ----",
+  hiTom:   "---- ---- 32-- ----",
+  midTom:  "---- ---- --32 ----",
+  lowTom:  "---- ---- ---- 3232",
+});
+
+const NEON_80S = {
+  name: "Neon 80s",
+  meta: "Linn · 118 · 6 pads",
+  about:
+    "Synth-pop on the LinnDrum: the 808 jumps octaves on every eighth (a short DECAY makes it a pluck), with big REVERB, a tambourine on the chorus and a tom fill back to the top.",
+  payload: payload(
+    118,
+    [neIntro, neVerseA, neVerseB, neChorusA, neChorusB, neFill],
+    { reverb: 0.25, filter: -75 },
+    { decay: 0.25, drive: 40, glide: 50 }
+  ),
+  bars: [
+    { pad: 0, filter: [-75, -50] },
+    { pad: 0, filter: [-50, -5] },
+    { pad: 1, filter: [0, 0] },
+    { pad: 2 },
+    { pad: 1 },
+    { pad: 2 },
+    { pad: 3 },
+    { pad: 4 },
+    { pad: 3 },
+    { pad: 5 },
+  ],
+  loopFrom: 2,
+};
+
+export const PRESETS = [DEMO_SONG, BOOM_BAP, HOUSE, LOFI, REGGAETON, AMAPIANO, NEON_80S];

@@ -78,8 +78,8 @@ test("the demo song walks its bars, then loops back to the groove", () => {
   assert.deepEqual(walk.slice(bars.length), [loopFrom, loopFrom + 1, loopFrom + 2]);
 });
 
-test("the Library holds a few preset songs, the demo first", () => {
-  assert.ok(PRESETS.length >= 2 && PRESETS.length <= 3);
+test("the Library holds a handful of preset songs, the demo first", () => {
+  assert.ok(PRESETS.length >= 2 && PRESETS.length <= 8);
   assert.equal(PRESETS[0], DEMO_SONG);
   assert.equal(new Set(PRESETS.map((p) => p.name)).size, PRESETS.length);
   for (const preset of PRESETS) {

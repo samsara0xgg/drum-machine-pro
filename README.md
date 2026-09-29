@@ -10,7 +10,7 @@ Audio API. Deployed on Vercel and Railway (API + MySQL).
 
 - Power-on intro: the machine boots, writes a 140 BPM trap demo onto the pads and
   plays it as a song across six patterns (filter sweeps, a build-up, the drop),
-  then a guided tour explains every module
+  then a guided tour explains every module, the Library and the guide
 - A guide behind the header's `?`: every control, what the pads' looks mean
   (soft, hard, sliced rolls, 808 notes), the 808, and the tour again. Space plays
   and pauses
@@ -24,9 +24,10 @@ Audio API. Deployed on Vercel and Railway (API + MySQL).
   switchable mid-playback, with cross-kit channel mixing
 - Master FX rack: pitch, pan, convolution reverb, and a DJ filter (low-pass / high-pass)
 - Kick-reactive glow and a live oscilloscope on the screen
-- Library drawer: three preset songs (the trap demo, boom bap, house) that play
-  through their sections, each showing off different features; save patterns
-  locally, or share any pattern as a short link (`/p/xxxxxxxx`)
+- Library drawer: seven preset songs (the trap demo, boom bap, house, lo-fi,
+  reggaeton, amapiano, 80s synth-pop) that play through their sections, each
+  showing off different features; save patterns locally, or share any pattern
+  as a short link (`/p/xxxxxxxx`)
 
 ## Run with Docker
 

@@ -1,7 +1,7 @@
 import React, { useContext, useLayoutEffect, useRef, useState } from "react";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import { Context } from "../Context";
-import { DEMO_SONG } from "../service/presets";
+import { DEMO_SONG, PRESETS } from "../service/presets";
 import { loadSample, sampleDef } from "../service/kits";
 import { ensureAudioReady } from "../service/audio";
 
@@ -29,27 +29,41 @@ export const firstPhase = () => {
 const STEPS = [
   {
     title: "Drum Machine Pro",
-    text: "A 16-step drum machine in your browser: draw a beat on the pads, pick a classic kit, shape it with FX. Here's what each part of the machine does; ? in the header opens the full guide any time.",
+    text: "A 16-step drum machine in your browser: draw a beat on the pads, pick a classic kit, shape it with FX and chain patterns into a song. This tour walks through every part; use the buttons or ← →, and play along while it runs.",
+    mobileText: "A 16-step drum machine in your browser: draw a beat on the pads, pick a classic kit, shape it with FX and chain patterns into a song. Tap NEXT to walk through every part.",
   },
   {
     target: ".Screen",
     title: "Display",
-    text: "Shows the kit, pattern and tempo, and flashes the value of whatever you just turned. The button on the right plays and pauses (so does Space).",
-    mobileText: "Shows the kit, pattern and tempo. The button on the right plays and pauses.",
+    text: "Shows the kit, the pattern and the tempo. Whatever knob you touch flashes its value on the left, and the faint line behind is the live waveform. The button on the right plays and pauses; so does Space.",
+    mobileText: "Shows the kit, the pattern and the tempo. The button on the right plays and pauses.",
   },
   {
     target: ".Board",
     place: "above",
     title: "Sequencer",
-    text: "Each row is one drum, each column a 16th note. Click a pad to light it, click it again to clear. HIT and ROLL above the grid set how new pads play: SOFT, MID or HARD, and ROLL fires a pad 2 to 4 times in its step, drawn as slices (the hat rolls you hear).",
-    mobileText: "Each row is one drum, each column a 16th note. Tap a pad to light it, tap it again to clear. HIT and ROLL above set how new pads play: soft to hard, and 2 to 4 hits per step, drawn as slices. The buttons on top show the 16 steps four at a time.",
+    text: "The grid is the beat. Each row is one sound, each column a 16th note, and the playhead sweeps left to right. Click a pad to light it and it plays on that step; click it again to clear it. While stopped, a pad plays once as it lights. Click a step number to move the playhead there.",
+    mobileText: "The grid is the beat. Each row is one sound, each column a 16th note. Tap a pad to light it, tap it again to clear it. The buttons on top show the 16 steps four at a time.",
+  },
+  {
+    target: ".Board-tools",
+    title: "Brushes",
+    text: "HIT and ROLL set how the next pads you click will play. SOFT pads are half-lit (ghost notes), HARD pads get a bright rim (accents). ROLL 2 to 4 fires a pad that many times within its step and draws it in slices: the fast hat rolls in the demo. To take a roll off, set ROLL to 1 and click the pad.",
+    mobileText: "HIT and ROLL set how the next pads you tap will play: SOFT is half-lit, HARD gets a bright rim, and ROLL 2 to 4 fires a pad that many times in its step, drawn as slices. To take a roll off, set ROLL to 1 and tap the pad.",
+  },
+  {
+    // every row can be deleted, so fall back to the add button
+    target: [".Board-Channel__info", ".Board-AddChannel"],
+    title: "Rows",
+    text: "A row's name is a menu: pick any sound from any kit. The green dot mutes the row, the red dot solos it, and rows that won't sound dim. Drag ≡ to reorder, ✕ deletes, and ADD CHANNEL+ under the grid adds a row.",
+    mobileText: "A row's name is a menu: pick any sound from any kit. The green dot mutes the row, the red dot solos it. ✕ deletes, and ADD CHANNEL+ under the grid adds a row.",
   },
   {
     // the keyboard only exists while the pattern has an 808 row
     target: [".Bass808", ".Board-bass"],
     title: "808 Bass",
-    text: "A synthesized 808 for basslines. + 808 BASS above the grid adds its row, and the same button hides or shows this keyboard. Click a key to hear a note and pick it, then click pads on the 808 Bass row. SLIDE glides into the note, the trap signature.",
-    mobileText: "A synthesized 808 for basslines. + 808 BASS above the grid adds its row and this keyboard. Tap a key to pick a note, then tap pads on the 808 Bass row. SLIDE glides into the note.",
+    text: "A synthesized 808 for basslines, played by its own row. + 808 BASS above the grid adds that row, and the same button hides or shows this keyboard. Click a key to hear a note and pick it, then click pads on the 808 Bass row; each pad shows its note. SLIDE glides into the note, the trap signature. Delete the row to remove the bass.",
+    mobileText: "A synthesized 808 for basslines. + 808 BASS above the grid adds its row, and the same button hides or shows this keyboard. Tap a key to pick a note, then tap pads on the 808 Bass row. SLIDE glides into the note.",
   },
   {
     target: ".Machine-card--master",
@@ -70,13 +84,25 @@ const STEPS = [
   {
     target: ".Machine-card--pattern",
     title: "Patterns",
-    text: "12 pattern slots, each with its own beat and kit. The demo is a song across pads 1 to 6: intro, groove, build-up, drop. Click a pad (or edit the grid) and the song stays on that section.",
+    text: "12 pattern slots, each with its own beat and kit, so one machine holds a whole song. The demo walks pads 1 to 6 by itself: intro, groove, build-up, drop. Click a pad (or edit the grid) and it stays on that section.",
   },
   {
-    target: ".Header",
+    target: ".Header-burger",
     title: "Library",
-    text: "☰ opens the Library: three preset songs to learn from, your saved patterns and share links. SAVE stores the whole machine, NEW starts blank, UPDATE overwrites the pattern you loaded. ? opens the guide to every control.",
-    mobileText: "☰ opens the Library: three preset songs to learn from, your saved patterns and share links. SAVE stores the whole machine, ? opens the guide.",
+    text: `☰ opens the Library. At the top, ${PRESETS.length} preset songs in different styles: pick one and it plays from the first bar, walking its pads, and each says what to listen for. Below, My patterns: everything you SAVE, kept in this browser; ⇪ copies a share link, ✕ deletes.`,
+    mobileText: `☰ opens the Library: ${PRESETS.length} preset songs in different styles that play as soon as you pick one, and everything you SAVE, with share links.`,
+  },
+  {
+    target: ".Header-save",
+    title: "Save",
+    text: "SAVE names and stores the whole machine: all 12 patterns, their kits, the tempo, every knob and the 808. NEW starts from a blank machine. UPDATE overwrites the pattern you loaded from My patterns with how it sounds now.",
+    mobileText: "SAVE names and stores the whole machine (all 12 patterns, their kits, the tempo and every knob) in the Library.",
+  },
+  {
+    target: ".Header-help",
+    title: "Guide",
+    text: "? opens the guide: every control on one page, what each pad look means, the 808, the keyboard shortcuts, and this tour again. That's the whole machine: start jamming, or open ☰ and play a preset song.",
+    mobileText: "? opens the guide: every control on one page, what each pad look means, and this tour again. Start jamming, or open ☰ and play a preset song.",
   },
 ];
 

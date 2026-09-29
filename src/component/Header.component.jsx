@@ -27,10 +27,14 @@ const Header = ({ onHelp }) => {
       </button>
       <span className="Header-brand">DRUM MACHINE PRO</span>
       <div className="Header-grow"></div>
-      <button className="Header-button" onClick={() => setSaveDialogOpen(true)}>
+      <button
+        className="Header-button Header-save"
+        title="Store the whole machine in the Library"
+        onClick={() => setSaveDialogOpen(true)}
+      >
         SAVE
       </button>
-      <button className="Header-button" onClick={newMachine}>
+      <button className="Header-button" title="Start from a blank machine" onClick={newMachine}>
         NEW
       </button>
       <button
@@ -42,7 +46,7 @@ const Header = ({ onHelp }) => {
         UPDATE
       </button>
       <button
-        className="Header-button"
+        className="Header-button Header-help"
         title="Guide: every control, and the tour"
         aria-label="Guide"
         onClick={onHelp}
