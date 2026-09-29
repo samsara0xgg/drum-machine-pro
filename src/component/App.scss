@@ -698,12 +698,41 @@ body {
     &[data-kind="HIT"][data-value="3"]::before {
       box-shadow: inset 0 0 0 1.5px #f6ffe9;
     }
+    // ROLL swatches are sliced like the pads they paint
+    &[data-kind="ROLL"]::before {
+      content: "";
+      width: 10px;
+      height: 8px;
+      border-radius: 2px;
+      background-color: $Primary-200;
+    }
+    @for $n from 2 through 4 {
+      &[data-kind="ROLL"][data-value="#{$n}"]::before {
+        background-image: repeating-linear-gradient(
+          90deg,
+          transparent 0 calc(#{math.div(100%, $n)} - 1px),
+          #1a1a1a calc(#{math.div(100%, $n)} - 1px) calc(#{math.div(100%, $n)})
+        );
+      }
+    }
     &.is-active {
       background-color: rgba(209, 249, 152, 0.16);
       box-shadow: inset 0 0 0 1px $Primary-200;
       color: $Primary-200;
     }
   }
+}
+
+// "Click a pad to paint it" next to the brushes; the 808 BASS toggle sits
+// at the far end of the row.
+.Board-hint {
+  font-size: 11px;
+  @include fontdp(0.38);
+}
+.Board-bass {
+  margin-left: auto;
+  padding-left: 10px;
+  padding-right: 10px;
 }
 
 // The 808 module: note keyboard (the note brush), SLIDE, and the voice's
@@ -773,6 +802,14 @@ body {
   &__knobs {
     display: flex;
     gap: 14px;
+  }
+  &__hint {
+    flex: 1 1 180px;
+    max-width: 260px;
+    margin: 0 0 0 auto;
+    font-size: 11px;
+    line-height: 1.45;
+    @include fontdp(0.45);
   }
 }
 
@@ -887,10 +924,28 @@ li {
       }
     }
   }
-  &-empty {
+  &-empty,
+  &-note {
     @include fontdp(0.5);
     font-size: 12px;
     margin: 4px 18px;
+  }
+  &-note {
+    margin-bottom: 8px;
+    line-height: 1.45;
+  }
+  // preset songs: name and meta, then what to listen for underneath
+  &-entry--preset {
+    flex-wrap: wrap;
+    row-gap: 3px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+  &-entry__about {
+    flex: 1 0 100%;
+    font-size: 12px;
+    line-height: 1.45;
+    @include fontdp(0.5);
   }
 
   // save-name dialog
@@ -964,6 +1019,133 @@ li {
   }
 }
 
+// The guide the header's "?" opens (Help.component.jsx): a scrolling sheet
+// of short sections over the machine.
+.Help-wrap {
+  position: fixed;
+  inset: 0;
+  z-index: 11;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 5vh 16px;
+  overflow-y: auto;
+  background-color: rgba(0, 0, 0, 0.6);
+  animation: tour-fade 0.2s $ease-out;
+}
+.Help {
+  width: min(760px, 100%);
+  padding: 18px 22px 22px;
+  background-color: #1f1f1f;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  box-shadow: 0 10px 36px rgba(0, 0, 0, 0.7);
+  @include fontdp(0.87);
+
+  &-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+  }
+  &-title {
+    flex: 1;
+    margin: 0;
+    font-size: 13px;
+    letter-spacing: 0.18em;
+  }
+  &-close {
+    width: 34px;
+    height: 34px;
+    border: none;
+    border-radius: 6px;
+    background: none;
+    font-size: 15px;
+    @include fontdp(0.5);
+    cursor: pointer;
+
+    &:hover {
+      color: $Primary-200;
+      background-color: rgba(255, 255, 255, 0.07);
+    }
+  }
+  &-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 28px;
+  }
+  &-section {
+    padding-top: 14px;
+
+    h3 {
+      margin: 0 0 6px;
+      font-size: 10.5px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: $Primary-200;
+    }
+    p,
+    ol,
+    ul {
+      margin: 0 0 6px;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    ol {
+      padding-left: 18px;
+    }
+    ol li {
+      list-style-type: decimal;
+    }
+    b {
+      color: $Primary-200;
+      font-weight: normal;
+    }
+  }
+  &-legend li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 5px;
+  }
+  // a grid pad in miniature, with the same velocity and roll looks
+  &-pad {
+    flex: none;
+    width: 30px;
+    height: 22px;
+    border-radius: 5px;
+    background-color: $Primary-200;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: $Mono;
+    font-size: 8.5px;
+    color: rgba(0, 0, 0, 0.72);
+
+    &[data-level="1"] {
+      background-color: rgba(209, 249, 152, 0.4);
+    }
+    &[data-level="3"] {
+      box-shadow: inset 0 0 0 2px #f6ffe9;
+    }
+    &[data-roll="4"] {
+      background-image: repeating-linear-gradient(
+        90deg,
+        transparent 0 calc(25% - 1.5px),
+        rgba(26, 26, 26, 0.55) calc(25% - 1.5px) 25%
+      );
+    }
+  }
+  kbd {
+    padding: 1px 6px;
+    border-radius: 4px;
+    background-color: #2e2e2e;
+    box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.12);
+    font-family: $Mono;
+    font-size: 11px;
+  }
+}
+
 // Mobile keeps the transport visible and scrolls only the step matrix.
 @media (max-width: 600px) {
   body {
@@ -992,8 +1174,10 @@ li {
       min-height: 44px;
       padding: 8px 10px;
     }
-    // only the header's own: the tour card's NEXT is also a third button
-    > .Header-button:nth-of-type(n + 3) {
+    // NEW and UPDATE stay desktop-only; "?" (the guide) stays. Only the
+    // header's own: the tour card's NEXT is also a third button.
+    > .Header-button:nth-of-type(3),
+    > .Header-button:nth-of-type(4) {
       display: none;
     }
   }
@@ -1238,6 +1422,17 @@ li {
 
   .Library {
     width: min(320px, 88vw);
+  }
+
+  .Help {
+    padding: 14px 16px 18px;
+
+    &-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+  .Board-bass {
+    margin-left: 0;
   }
 
   // Keep four pads at a comfortable touch width on narrower iPhones.

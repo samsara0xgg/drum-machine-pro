@@ -105,15 +105,19 @@ const Library = () => {
       ></div>
       <aside className={"Library" + (drawerOpen ? " is-open" : "")}>
         <h2 className="Library-title">LIBRARY</h2>
-        <div className="Library-group">Presets</div>
+        <div className="Library-group">Preset songs</div>
+        <div className="Library-note">
+          Each one plays through its pads like a song. Tap a pad to loop that section.
+        </div>
         {PRESETS.map((preset) => (
           <div
             key={preset.name}
-            className="Library-entry"
+            className="Library-entry Library-entry--preset"
             onClick={() => loadPreset(preset)}
           >
             <span className="Library-entry__name">{preset.name}</span>
             <span className="Library-entry__meta">{preset.meta}</span>
+            <span className="Library-entry__about">{preset.about}</span>
           </div>
         ))}
         <div className="Library-group">My Patterns</div>

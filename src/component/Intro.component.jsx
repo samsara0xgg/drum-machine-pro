@@ -7,7 +7,7 @@ import { ensureAudioReady } from "../service/audio";
 
 // First visit: power screen -> boot animation writes the demo song's intro
 // onto the pads -> the song plays through pads 1-5 -> a tour explains each module.
-// Phases: off -> boot -> demo -> tour -> done ("?" in the header reopens the tour).
+// Phases: off -> boot -> demo -> tour -> done (the "?" guide reopens the tour).
 const SEEN_KEY = "drum-machine-intro-seen";
 // Matches the boot timeline in App.scss: the last pad lands at 700 + 15 * 60 + 260 ms.
 const BOOT_MS = 1900;
@@ -29,25 +29,27 @@ export const firstPhase = () => {
 const STEPS = [
   {
     title: "Drum Machine Pro",
-    text: "A 16-step drum machine in your browser: draw a beat on the pads, pick a classic kit, shape it with FX. Here's what each part of the machine does.",
+    text: "A 16-step drum machine in your browser: draw a beat on the pads, pick a classic kit, shape it with FX. Here's what each part of the machine does; ? in the header opens the full guide any time.",
   },
   {
     target: ".Screen",
     title: "Display",
-    text: "Shows the kit, pattern and tempo, and flashes the value of whatever you just turned. The button on the right plays and pauses.",
+    text: "Shows the kit, pattern and tempo, and flashes the value of whatever you just turned. The button on the right plays and pauses (so does Space).",
+    mobileText: "Shows the kit, pattern and tempo. The button on the right plays and pauses.",
   },
   {
     target: ".Board",
     place: "above",
     title: "Sequencer",
-    text: "The heart of the machine. Each row is one drum, each column a 16th note. Lit pads play. The brushes above set how new pads play: HIT soft, mid or hard; ROLL fires a pad 2 to 4 times in its step (a sliced pad), for trap hat rolls. Per row: click the name to change the sound, the dots mute (green) or solo (red).",
-    mobileText: "The heart of the machine. Each row is one drum, each column a 16th note. Lit pads play. The brushes above it set how new pads play: HIT picks soft, mid or hard, ROLL fires a pad 2 to 4 times within its step. Tapping a pad that already matches both clears it. The buttons above show the 16 steps four at a time.",
+    text: "Each row is one drum, each column a 16th note. Click a pad to light it, click it again to clear. HIT and ROLL above the grid set how new pads play: SOFT, MID or HARD, and ROLL fires a pad 2 to 4 times in its step, drawn as slices (the hat rolls you hear).",
+    mobileText: "Each row is one drum, each column a 16th note. Tap a pad to light it, tap it again to clear. HIT and ROLL above set how new pads play: soft to hard, and 2 to 4 hits per step, drawn as slices. The buttons on top show the 16 steps four at a time.",
   },
   {
-    target: ".Bass808",
+    // the keyboard only exists while the pattern has an 808 row
+    target: [".Bass808", ".Board-bass"],
     title: "808 Bass",
-    text: "A synthesized 808 for basslines, played by the 808 Bass row (add one from ADD CHANNEL, under Synth). Click a key to hear a note and pick it, then click pads on that row. SLIDE glides a note in from the one before, the trap signature. DECAY sets the tail, DRIVE the grit that carries it on small speakers, GLIDE how long a slide takes.",
-    mobileText: "A synthesized 808 for basslines, played by the 808 Bass row (add one from ADD CHANNEL, under Synth). Tap a key to hear a note and pick it, then tap pads on that row. SLIDE glides a note in from the one before. DECAY sets the tail, DRIVE the grit, GLIDE how long a slide takes.",
+    text: "A synthesized 808 for basslines. + 808 BASS above the grid adds its row, and the same button hides or shows this keyboard. Click a key to hear a note and pick it, then click pads on the 808 Bass row. SLIDE glides into the note, the trap signature.",
+    mobileText: "A synthesized 808 for basslines. + 808 BASS above the grid adds its row and this keyboard. Tap a key to pick a note, then tap pads on the 808 Bass row. SLIDE glides into the note.",
   },
   {
     target: ".Machine-card--master",
@@ -68,13 +70,13 @@ const STEPS = [
   {
     target: ".Machine-card--pattern",
     title: "Patterns",
-    text: "12 pattern slots, each with its own beat and kit. The demo is a song across pads 1 to 6: intro, groove, two build-up bars, chorus and its fill. Click a pad (or edit the grid) and the song stays on that section.",
+    text: "12 pattern slots, each with its own beat and kit. The demo is a song across pads 1 to 6: intro, groove, build-up, drop. Click a pad (or edit the grid) and the song stays on that section.",
   },
   {
     target: ".Header",
     title: "Library",
-    text: "☰ opens the Library: preset grooves, your saved patterns and share links. SAVE stores the whole machine, NEW starts blank, UPDATE overwrites the pattern you loaded, ? replays this tour.",
-    mobileText: "☰ opens the Library: preset grooves, your saved patterns and share links. SAVE stores the whole machine.",
+    text: "☰ opens the Library: three preset songs to learn from, your saved patterns and share links. SAVE stores the whole machine, NEW starts blank, UPDATE overwrites the pattern you loaded. ? opens the guide to every control.",
+    mobileText: "☰ opens the Library: three preset songs to learn from, your saved patterns and share links. SAVE stores the whole machine, ? opens the guide.",
   },
 ];
 
@@ -114,7 +116,10 @@ const Tour = ({ onClose }) => {
       const vh = window.innerHeight;
       const cw = card.offsetWidth;
       const ch = card.offsetHeight;
-      const el = step.target && document.querySelector(step.target);
+      // a list of targets spotlights the first one on the page
+      const el = [].concat(step.target ?? [])
+        .map((selector) => document.querySelector(selector))
+        .find(Boolean);
       // No module (the welcome card): a tiny ringless spotlight dims everything
       // (a 0x0 box would paint no shadow at all).
       const r = el

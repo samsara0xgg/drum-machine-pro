@@ -11,7 +11,7 @@ import {
   toLevel,
   toRoll,
 } from "../src/service/groove.js";
-import { DEMO_SONG } from "../src/service/presets.js";
+import { DEMO_SONG, PRESETS } from "../src/service/presets.js";
 import {
   HIGHEST_NOTE,
   LOWEST_NOTE,
@@ -78,23 +78,44 @@ test("the demo song walks its bars, then loops back to the groove", () => {
   assert.deepEqual(walk.slice(bars.length), [loopFrom, loopFrom + 1, loopFrom + 2]);
 });
 
-test("every demo tab is 16 steps of valid levels and rolls on a real pad", () => {
-  const { payload, bars } = DEMO_SONG;
-  assert.equal(payload.version, 2);
-  for (const pattern of payload.patterns) {
-    for (const row of pattern.channels) {
-      assert.equal(row.steps.length, 16);
-      assert.equal(row.rolls.length, 16);
-      assert.ok(row.steps.every((s) => Number.isInteger(s) && s >= 0 && s <= 3));
-      assert.ok(row.rolls.every((r) => Number.isInteger(r) && r >= 1 && r <= 4));
-    }
+test("the Library holds a few preset songs, the demo first", () => {
+  assert.ok(PRESETS.length >= 2 && PRESETS.length <= 3);
+  assert.equal(PRESETS[0], DEMO_SONG);
+  assert.equal(new Set(PRESETS.map((p) => p.name)).size, PRESETS.length);
+  for (const preset of PRESETS) {
+    assert.ok(preset.name && preset.meta && preset.about, `${preset.name} is labelled`);
   }
-  assert.ok(bars.every(({ pad }) => pad < payload.patterns.length));
-  const bassRows = payload.patterns.flatMap((p) => p.channels).filter((c) => c.kit === "synth");
-  assert.ok(bassRows.some((c) => c.steps.some(Boolean)), "the demo has a bassline");
-  for (const row of bassRows) {
-    assert.ok(row.notes.every((n) => n >= LOWEST_NOTE && n <= HIGHEST_NOTE));
-    assert.ok(row.slides.every((s) => s === 0 || s === 1));
-  }
-  assert.equal(bars[0].filter[0], payload.filter, "the song starts where the payload's knob is");
 });
+
+for (const preset of PRESETS) {
+  test(`${preset.name}: every tab is 16 steps of valid levels and rolls on a real pad`, () => {
+    const { payload, bars, loopFrom } = preset;
+    assert.equal(payload.version, 2);
+    assert.equal(payload.patterns.length, 12);
+    for (const pattern of payload.patterns) {
+      assert.ok(pattern.channels.length <= 20);
+      for (const row of pattern.channels) {
+        assert.equal(row.steps.length, 16);
+        assert.equal(row.rolls.length, 16);
+        assert.ok(row.steps.every((s) => Number.isInteger(s) && s >= 0 && s <= 3));
+        assert.ok(row.rolls.every((r) => Number.isInteger(r) && r >= 1 && r <= 4));
+      }
+    }
+    assert.ok(bars.every(({ pad }) => pad < payload.patterns.length));
+    assert.ok(loopFrom >= 0 && loopFrom < bars.length);
+    const bassRows = payload.patterns.flatMap((p) => p.channels).filter((c) => c.kit === "synth");
+    assert.ok(bassRows.some((c) => c.steps.some(Boolean)), "the song has a bassline");
+    for (const row of bassRows) {
+      assert.ok(row.notes.every((n) => n >= LOWEST_NOTE && n <= HIGHEST_NOTE));
+      assert.ok(row.slides.every((s) => s === 0 || s === 1));
+    }
+    // The song owns the filter while it plays, so its first bar has to set
+    // it, starting where the loaded knob is.
+    assert.ok(bars[0].filter, "the first bar sets the filter");
+    assert.equal(bars[0].filter[0], payload.filter, "the song starts where the payload's knob is");
+    // every pad the song lists has something on it
+    for (const { pad } of bars) {
+      assert.ok(payload.patterns[pad].channels.some((c) => c.steps.some(Boolean)));
+    }
+  });
+}

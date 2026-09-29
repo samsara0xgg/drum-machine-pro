@@ -11,17 +11,22 @@ Audio API. Deployed on Vercel and Railway (API + MySQL).
 - Power-on intro: the machine boots, writes a 140 BPM trap demo onto the pads and
   plays it as a song across six patterns (filter sweeps, a build-up, the drop),
   then a guided tour explains every module
+- A guide behind the header's `?`: every control, what the pads' looks mean
+  (soft, hard, sliced rolls, 808 notes), the 808, and the tour again. Space plays
+  and pauses
 - 16-step sequencer with 12 patterns and up to 20 channels, mute/solo, drag to reorder
 - Per-step velocity (soft / mid / hard) and rolls (2-4 hits per step), painted with
   brushes; MPC-style swing
 - Synthesized 808 bass: a mono voice with punch, drive, and legato slides, played
-  from a two-octave note keyboard
+  from a two-octave note keyboard (`+ 808 BASS` above the grid adds it, and hides
+  or shows the keyboard)
 - Five classic kits (TR-707, TR-808, LinnDrum, Acetone Rhythm Ace, hip hop),
   switchable mid-playback, with cross-kit channel mixing
 - Master FX rack: pitch, pan, convolution reverb, and a DJ filter (low-pass / high-pass)
 - Kick-reactive glow and a live oscilloscope on the screen
-- Library drawer: save patterns locally, load built-in grooves, or share any pattern
-  as a short link (`/p/xxxxxxxx`)
+- Library drawer: three preset songs (the trap demo, boom bap, house) that play
+  through their sections, each showing off different features; save patterns
+  locally, or share any pattern as a short link (`/p/xxxxxxxx`)
 
 ## Run with Docker
 

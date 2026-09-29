@@ -1,5 +1,14 @@
 import React, { useEffect, useRef, useState } from "react";
-import { DEFAULT_KIT, KITS, fitVoice, newChannel, newUid } from "./service/kits";
+import {
+  DEFAULT_KIT,
+  KITS,
+  fitVoice,
+  loadSample,
+  newChannel,
+  newUid,
+  sampleDef,
+} from "./service/kits";
+import { ensureAudioReady } from "./service/audio";
 import { createBass } from "./service/bass808";
 import { loadPattern } from "./service/api";
 import { filterHz, toLevel, toRoll } from "./service/groove";
@@ -273,11 +282,26 @@ const ContextProvider = ({ children }) => {
     toast(<>Loaded <b>{entry.name}</b></>);
   };
 
-  // Presets are built-in, so they never enable UPDATE.
-  const loadPreset = (preset) => {
+  // Presets are built-in songs, so they never enable UPDATE. Loading one
+  // plays it from its first bar, walking its pads like the power-on demo.
+  const loadPreset = async (preset) => {
+    // resume() must start inside the click itself (iOS), before any await.
+    const audio = ensureAudioReady(audioCtx);
     if (!hydrate(preset.payload)) return;
+    songRef.current = { bars: preset.bars, loopFrom: preset.loopFrom, pos: 0 };
+    nextStepRef.current = 0;
     setLoadedId(null);
-    toast(<>Loaded preset <b>{preset.name}</b></>);
+    setDrawerOpen(false);
+    toast(<>Playing <b>{preset.name}</b> · tap a pad to stay on it</>);
+    const urls = new Set(
+      preset.payload.patterns.flatMap((p) => p.channels.map((c) => sampleDef(c).sample))
+    );
+    try {
+      await Promise.all([audio, ...[...urls].map((url) => loadSample(audioCtx, url, buffersRef.current))]);
+      setStarted(true);
+    } catch (error) {
+      toast(error?.message || "Could not load audio. Tap play to try again.");
+    }
   };
 
   // NEW: back to the blank default machine.

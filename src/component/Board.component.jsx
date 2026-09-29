@@ -24,17 +24,20 @@ import { paint } from "../service/groove";
 import { DEFAULT_NOTE } from "../service/bass808";
 import BassPanel from "./Board/BassPanel.component";
 
-// One brush row: the value new pads are painted with.
+// One brush row: the value new pads are painted with. Each option is
+// [value, text, tooltip]; the swatch before the text shows how a pad painted
+// with it looks on the grid.
 const Brush = ({ label, options, value, onChange }) => (
   <div className="Board-Brush" role="group" aria-label={label}>
     <span className="Board-Brush__label">{label}</span>
-    {options.map(([v, text]) => (
+    {options.map(([v, text, tip]) => (
       <button
         key={v}
         className={"Board-Brush__button" + (v === value ? " is-active" : "")}
         data-kind={label}
         data-value={v}
         aria-pressed={v === value}
+        title={tip}
         onClick={() => onChange(v)}
       >
         {text}
@@ -64,6 +67,9 @@ const Board = () => {
   // 808 rows also paint a note, and whether the note slides in.
   const [noteBrush, setNoteBrush] = useState(DEFAULT_NOTE);
   const [slideBrush, setSlideBrush] = useState(0);
+  // The 808 keyboard shows whenever the pattern has an 808 row, unless it
+  // was folded away with the 808 BASS button.
+  const [bassOpen, setBassOpen] = useState(true);
   const [mobilePage, setMobilePage] = useState(0);
 
   // Follow the sounding group just four times per bar, not on every step.
@@ -153,6 +159,18 @@ const Board = () => {
   };
 
   const channelIds = channels.map((c) => c.uid);
+  const hasBass = channels.some(isSynth);
+
+  // 808 BASS: adds an 808 row (and so the keyboard) when there is none,
+  // otherwise folds the keyboard away or brings it back.
+  const toggleBass = () => {
+    if (hasBass) {
+      setBassOpen(!bassOpen);
+    } else {
+      addChannel("synth", 0);
+      setBassOpen(true);
+    }
+  };
 
   const onDragEnd = ({ active, over }) => {
     if (!over || active.id === over.id) {
@@ -180,18 +198,47 @@ const Board = () => {
       <div className="Board-tools">
         <Brush
           label="HIT"
-          options={[[1, "SOFT"], [2, "MID"], [3, "HARD"]]}
+          options={[
+            [1, "SOFT", "Soft hit, for ghost notes: the pad is half-lit"],
+            [2, "MID", "Normal hit"],
+            [3, "HARD", "Hard hit, for accents: the pad gets a bright rim"],
+          ]}
           value={brush}
           onChange={setBrush}
         />
         <Brush
           label="ROLL"
-          options={[[1, "1"], [2, "2"], [3, "3"], [4, "4"]]}
+          options={[
+            [1, "1", "One hit per step"],
+            ...[2, 3, 4].map((n) => [
+              n,
+              String(n),
+              `The pad fires ${n} times within its step, drawn as ${n} slices (hi-hat rolls)`,
+            ]),
+          ]}
           value={rollBrush}
           onChange={setRollBrush}
         />
+        <span className="Board-hint">
+          {isMobile ? "Tap" : "Click"} a pad to paint it with these, again to clear
+        </span>
+        <button
+          className={
+            "Board-Brush__button Board-bass" + (hasBass && bassOpen ? " is-active" : "")
+          }
+          aria-expanded={hasBass ? bassOpen : undefined}
+          title={
+            hasBass
+              ? (bassOpen ? "Hide" : "Show") +
+                " the 808 keyboard. Delete the 808 Bass row (✕) to remove the bass."
+              : "Add an 808 Bass row and its note keyboard"
+          }
+          onClick={toggleBass}
+        >
+          {hasBass ? "808 BASS" : "+ 808 BASS"}
+        </button>
       </div>
-      {channels.some(isSynth) && (
+      {hasBass && bassOpen && (
         <BassPanel
           note={noteBrush}
           setNote={setNoteBrush}

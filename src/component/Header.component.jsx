@@ -1,7 +1,7 @@
 import React, { useContext } from "react";
 import { Context } from "../Context";
 
-const Header = ({ onTour }) => {
+const Header = ({ onHelp }) => {
   const {
     library,
     loadedId,
@@ -41,7 +41,12 @@ const Header = ({ onTour }) => {
       >
         UPDATE
       </button>
-      <button className="Header-button" title="Tour of the machine" onClick={onTour}>
+      <button
+        className="Header-button"
+        title="Guide: every control, and the tour"
+        aria-label="Guide"
+        onClick={onHelp}
+      >
         ?
       </button>
     </div>

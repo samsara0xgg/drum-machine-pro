@@ -1,24 +1,14 @@
-// Built-in Library grooves. Each payload is a full v2 snapshot, same shape as a
+// Built-in Library songs. Each payload is a full v2 snapshot, same shape as a
 // share link, so loading one goes through the same hydrate() as /p/:slug.
+// Every preset is a whole song: `bars` says which pad plays each bar (and
+// how the FILTER knob moves across it), the way the power-on demo plays.
 import { STEP_COUNT } from "./kits.js";
 import { DEFAULT_NOTE, parseNote } from "./bass808.js";
 
-// Turn a list of step numbers into the level[16] a channel row stores
-// (every hit at mid, 2).
-const steps = (on) => Array.from({ length: STEP_COUNT }, (_, i) => (on.includes(i) ? 2 : 0));
-
-const row = (kit, slot, on) => ({
-  kit,
-  slot,
-  steps: steps(on),
-  muted: false,
-  solo: false,
-});
-
-// A preset can fill several pads: defs[i] = { kit, rows } lands on pad i+1.
-// The remaining pads keep pattern 1's lineup with empty steps, and fx can
-// carry pitch/pan/reverb/swing/filter so a preset loads with its own master sound.
-const payload = (bpm, defs, fx = {}) => ({
+// Songs fill the first pads; the remaining pads keep the first pad's lineup
+// with nothing lit, ready to draw on. fx carries the master sound
+// (pitch/pan/reverb/swing/filter) and bass the 808 voice.
+const payload = (bpm, sections, fx = {}, bass) => ({
   version: 2,
   bpm,
   swing: fx.swing ?? 50,
@@ -26,330 +16,27 @@ const payload = (bpm, defs, fx = {}) => ({
   pitch: fx.pitch ?? 0,
   pan: fx.pan ?? 0,
   reverb: fx.reverb ?? 0,
+  ...(bass && { bass }),
   patternNum: 0,
   patterns: [...Array(12)].map((_, i) =>
-    defs[i]
-      ? { kit: defs[i].kit, channels: defs[i].rows }
+    sections[i]
+      ? { kit: sections[i].kit, channels: sections[i].rows }
       : {
-          kit: defs[0].kit,
-          channels: defs[0].rows.map((r) => ({ ...r, steps: steps([]) })),
+          kit: sections[0].kit,
+          channels: sections[0].rows.map((r) => ({
+            ...r,
+            steps: Array(STEP_COUNT).fill(0),
+            rolls: Array(STEP_COUNT).fill(1),
+          })),
         }
   ),
 });
 
-export const PRESETS = [
-  {
-    name: "808 Boom Bap",
-    meta: "808 · 98",
-    payload: payload(98, [
-      {
-        kit: "808",
-        rows: [
-          row("808", 0, [0, 7, 10]),
-          row("808", 1, [4, 12]),
-          row("808", 2, [0, 2, 4, 6, 8, 10, 12, 14]),
-          row("808", 3, [14]),
-        ],
-      },
-    ]),
-  },
-  {
-    name: "707 House",
-    meta: "707 · 133",
-    payload: payload(133, [
-      {
-        kit: "707",
-        rows: [
-          row("707", 0, [0, 4, 8, 12]),
-          row("707", 4, [4, 12]),
-          row("707", 3, [2, 6, 10, 14]),
-          row("707", 5, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]),
-        ],
-      },
-    ]),
-  },
-  {
-    // The cowbell row is borrowed from the 808 kit — cross-kit mixing demo.
-    name: "Linn 80s Pop",
-    meta: "Linn · 124",
-    payload: payload(124, [
-      {
-        kit: "linndrum",
-        rows: [
-          row("linndrum", 0, [0, 8]),
-          row("linndrum", 1, [4, 12]),
-          row("linndrum", 2, [0, 2, 4, 6, 8, 10, 12, 14]),
-          row("linndrum", 7, [4, 12]),
-          row("808", 5, [6, 14]),
-        ],
-      },
-    ]),
-  },
-  {
-    // Four pads: main groove, busier variation, percussion break, tom fill.
-    // The clave line runs a 3-2 son clave the whole way through.
-    name: "808 Electro",
-    meta: "808 · 128 · 4 pads",
-    payload: payload(128, [
-      {
-        kit: "808",
-        rows: [
-          row("808", 0, [0, 10]),
-          row("808", 1, [4, 12]),
-          row("808", 2, [0, 2, 4, 6, 8, 10, 12, 14]),
-          row("808", 3, []),
-          row("808", 6, [0, 3, 6, 10, 12]),
-          row("808", 5, [0, 4, 8, 12]),
-          row("808", 9, []),
-          row("808", 10, []),
-        ],
-      },
-      {
-        kit: "808",
-        rows: [
-          row("808", 0, [0, 10, 13]),
-          row("808", 1, [4, 12]),
-          row("808", 2, [0, 2, 4, 6, 8, 10, 12, 14]),
-          row("808", 3, [2, 10]),
-          row("808", 6, [0, 3, 6, 10, 12]),
-          row("808", 5, [0, 4, 8, 12]),
-          row("808", 9, [7]),
-          row("808", 10, [15]),
-        ],
-      },
-      {
-        kit: "808",
-        rows: [
-          row("808", 0, []),
-          row("808", 1, []),
-          row("808", 2, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]),
-          row("808", 3, [4, 12]),
-          row("808", 6, [0, 3, 6, 10, 12]),
-          row("808", 5, [0, 2, 4, 6, 8, 10, 12, 14]),
-          row("808", 9, [8, 9]),
-          row("808", 10, [12, 14]),
-        ],
-      },
-      {
-        kit: "808",
-        rows: [
-          row("808", 0, [0, 8]),
-          row("808", 1, [12, 13, 14, 15]),
-          row("808", 2, [0, 2, 4, 6, 8, 10]),
-          row("808", 3, []),
-          row("808", 6, [0, 3, 6]),
-          row("808", 5, [0, 4, 8]),
-          row("808", 9, [4, 6]),
-          row("808", 10, [10, 11]),
-        ],
-      },
-    ]),
-  },
-  {
-    // Half-time trap: snare only on beat 3, hat rolls hand off between the two
-    // closed hats; the offbeat tick on pads 3-4 is borrowed from the 808 rimshot.
-    name: "Trap Hall",
-    meta: "Hip Hop · 140 · 4 pads",
-    payload: payload(140, [
-      {
-        kit: "hiphop",
-        rows: [
-          row("hiphop", 0, [0, 7, 10]),
-          row("hiphop", 1, [8]),
-          row("hiphop", 2, [0, 2, 4, 6, 8, 10, 12, 14]),
-          row("hiphop", 5, [13, 14, 15]),
-          row("hiphop", 3, []),
-          row("808", 7, []),
-        ],
-      },
-      {
-        kit: "hiphop",
-        rows: [
-          row("hiphop", 0, [0, 7, 10, 13]),
-          row("hiphop", 1, [8]),
-          row("hiphop", 2, [0, 2, 4, 6, 8, 10, 12, 14]),
-          row("hiphop", 5, [4, 5, 6, 7]),
-          row("hiphop", 3, [14]),
-          row("808", 7, []),
-        ],
-      },
-      {
-        kit: "hiphop",
-        rows: [
-          row("hiphop", 0, [0, 10]),
-          row("hiphop", 1, [8]),
-          row("hiphop", 2, [0, 4, 8, 12]),
-          row("hiphop", 5, []),
-          row("hiphop", 3, [2, 6, 10, 14]),
-          row("808", 7, [3, 11]),
-        ],
-      },
-      {
-        kit: "hiphop",
-        rows: [
-          row("hiphop", 0, [0]),
-          row("hiphop", 1, [8]),
-          row("hiphop", 2, [0, 4, 8, 12]),
-          row("hiphop", 5, []),
-          row("hiphop", 3, []),
-          row("808", 7, []),
-          row("hiphop", 4, [12, 13, 14, 15]),
-        ],
-      },
-    ]),
-  },
-  {
-    // The Rhythm Ace doing what it was built for: a bossa. Pad 2 opens the
-    // hats, pad 3 drops the kick for a percussion passage.
-    name: "Ace Bossa",
-    meta: "Acetone · 138 · 3 pads",
-    payload: payload(138, [
-      {
-        kit: "acetone",
-        rows: [
-          row("acetone", 0, [0, 6, 8, 14]),
-          row("acetone", 2, [0, 2, 4, 6, 8, 10, 12, 14]),
-          row("acetone", 5, [0, 3, 6, 10, 13]),
-          row("acetone", 4, [4, 12]),
-          row("acetone", 3, []),
-          row("acetone", 6, []),
-        ],
-      },
-      {
-        kit: "acetone",
-        rows: [
-          row("acetone", 0, [0, 6, 8, 14]),
-          row("acetone", 2, [0, 2, 4, 6, 8, 10, 12, 14]),
-          row("acetone", 5, [0, 3, 6, 10, 13]),
-          row("acetone", 4, [4, 12]),
-          row("acetone", 3, [7, 15]),
-          row("acetone", 6, [8]),
-        ],
-      },
-      {
-        kit: "acetone",
-        rows: [
-          row("acetone", 0, []),
-          row("acetone", 2, [0, 2, 4, 6, 8, 10, 12, 14]),
-          row("acetone", 5, [0, 3, 6, 10, 13]),
-          row("acetone", 4, [0, 2, 5, 8, 10, 13]),
-          row("acetone", 3, [4, 12]),
-          row("acetone", 6, []),
-        ],
-      },
-    ]),
-  },
-  {
-    // 80s boogie: LinnDrum backbeat fattened with the 808 clap layered on top
-    // of the snare — a classic cross-kit production trick.
-    name: "Linn Boogie",
-    meta: "Linn + 808 · 108 · 3 pads",
-    payload: payload(108, [
-      {
-        kit: "linndrum",
-        rows: [
-          row("linndrum", 0, [0, 5, 8, 10]),
-          row("linndrum", 1, [4, 12]),
-          row("808", 4, [4, 12]),
-          row("linndrum", 2, [0, 2, 3, 4, 6, 8, 10, 11, 12, 14]),
-          row("linndrum", 7, [2, 6, 10, 14]),
-          row("linndrum", 5, []),
-          row("linndrum", 9, []),
-          row("linndrum", 10, []),
-        ],
-      },
-      {
-        kit: "linndrum",
-        rows: [
-          row("linndrum", 0, [0, 5, 8, 10, 14]),
-          row("linndrum", 1, [4, 12]),
-          row("808", 4, [4, 12]),
-          row("linndrum", 2, [0, 2, 3, 4, 6, 8, 10, 11, 12, 14]),
-          row("linndrum", 7, [2, 6, 10, 14]),
-          row("linndrum", 5, [0, 4, 8, 12]),
-          row("linndrum", 9, []),
-          row("linndrum", 10, []),
-        ],
-      },
-      {
-        kit: "linndrum",
-        rows: [
-          row("linndrum", 0, [0, 8]),
-          row("linndrum", 1, [4, 12, 15]),
-          row("808", 4, [4, 12]),
-          row("linndrum", 2, [0, 2, 4, 6]),
-          row("linndrum", 7, []),
-          row("linndrum", 5, []),
-          row("linndrum", 9, [8, 9]),
-          row("linndrum", 10, [12, 13]),
-        ],
-      },
-    ]),
-  },
-  {
-    // Slow dub: one-drop on pad 1, steppers on pad 3, and the whole preset
-    // loads with the master reverb up — the fx snapshot in action. The rimshot
-    // and tambourine are borrowed from the LinnDrum.
-    name: "Dub Echo",
-    meta: "808 + Linn · 76 · 3 pads · reverb",
-    payload: payload(
-      76,
-      [
-        {
-          kit: "808",
-          rows: [
-            row("808", 0, [8]),
-            row("linndrum", 6, [8]),
-            row("808", 2, [0, 2, 4, 6, 8, 10, 12, 14]),
-            row("808", 3, []),
-            row("808", 6, []),
-            row("linndrum", 7, [4, 12]),
-          ],
-        },
-        {
-          kit: "808",
-          rows: [
-            row("808", 0, [8, 14]),
-            row("linndrum", 6, [8]),
-            row("808", 2, [0, 2, 4, 6, 8, 10, 12, 14]),
-            row("808", 3, [6]),
-            row("808", 6, [3, 11]),
-            row("linndrum", 7, [4, 12]),
-          ],
-        },
-        {
-          kit: "808",
-          rows: [
-            row("808", 0, [0, 4, 8, 12]),
-            row("linndrum", 6, [8]),
-            row("808", 2, [0, 2, 4, 6, 8, 10, 12, 14]),
-            row("808", 3, [14]),
-            row("808", 6, []),
-            row("linndrum", 7, [0, 2, 4, 6, 8, 10, 12, 14]),
-          ],
-        },
-      ],
-      { reverb: 0.35 }
-    ),
-  },
-];
-
-// The power-on demo: a trap beat in F minor across six pads, written as
-// drum tabs. One character per 16th: "-" rest, 1 soft, 2 mid, 3 hard;
-// spaces split beats. A row is its hits tab, or [hits, rolls] where a roll
-// digit is how many times that step fires. The 808 row is { hits, notes }:
-// one note per hit in order, "~" marking a slide into it. Half-time feel:
-// the backbeat lands on step 9.
-const LINEUP = {
-  kick: ["808", 0],
-  bass: ["synth", 0],
-  clap: ["808", 4],
-  snare: ["hiphop", 1],
-  hat: ["808", 2],
-  openHat: ["808", 3],
-  rim: ["808", 7],
-  cowbell: ["808", 5],
-};
+// Sections are written as drum tabs. One character per 16th: "-" rest,
+// 1 soft, 2 mid, 3 hard; spaces split beats. A row is its hits tab, or
+// [hits, rolls] where a roll digit is how many times that step fires. The
+// 808 row is { hits, notes }: one note per hit in order, "~" marking a
+// slide into it. A lineup names each song's rows as [kit, slot], in order.
 const REST = "---- ---- ---- ----";
 const tab = (text, rest) => [...text.replace(/ /g, "")].map((c) => (c === "-" ? rest : Number(c)));
 const bassLine = (steps, notes) => {
@@ -363,23 +50,36 @@ const bassLine = (steps, notes) => {
     slides: line.map((name) => (name?.startsWith("~") ? 1 : 0)),
   };
 };
-const section = (tabs) => ({
-  kit: "808",
-  rows: Object.entries(LINEUP).map(([name, [kit, slot]]) => {
-    const spec = tabs[name] ?? REST;
-    const [hits, rolls = REST] = spec.hits ? [spec.hits] : [].concat(spec);
+const tabs = (kit, lineup) => (spec) => ({
+  kit,
+  rows: Object.entries(lineup).map(([name, [rowKit, slot]]) => {
+    const part = spec[name] ?? REST;
+    const [hits, rolls = REST] = part.hits ? [part.hits] : [].concat(part);
     const steps = tab(hits, 0);
-    const row = { kit, slot, steps, rolls: tab(rolls, 1), muted: false, solo: false };
-    return kit === "synth" ? { ...row, ...bassLine(steps, spec.notes ?? "") } : row;
+    const row = { kit: rowKit, slot, steps, rolls: tab(rolls, 1), muted: false, solo: false };
+    return rowKit === "synth" ? { ...row, ...bassLine(steps, part.notes ?? "") } : row;
   }),
 });
 
-const intro = section({
+// ---- Trap: the power-on demo, in F minor across six pads. Half-time feel:
+// the backbeat lands on step 9. ----
+const trap = tabs("808", {
+  kick: ["808", 0],
+  bass: ["synth", 0],
+  clap: ["808", 4],
+  snare: ["hiphop", 1],
+  hat: ["808", 2],
+  openHat: ["808", 3],
+  rim: ["808", 7],
+  cowbell: ["808", 5],
+});
+
+const trapIntro = trap({
   hat:     "2-1- 2-1- 2-1- 2-1-",
   rim:     "---- ---- 2--- ----",
   cowbell: "2--2 --2- ---- ----",
 });
-const groove = section({
+const trapGroove = trap({
   kick:    "3--- ---- --3- --2-",
   bass:   { hits: "3--- ---- --2- --2-", notes: "F1 F1 ~G#1" },
   clap:    "---- ---- 3--- ----",
@@ -388,7 +88,7 @@ const groove = section({
            "---- ---2 ---- ---3"],
   cowbell: "1--1 --1- ---- ----",
 });
-const buildUp = section({
+const trapBuildUp = trap({
   kick:    "3--- ---- ---- ----",
   bass:   { hits: "3--- ---- ---- ----", notes: "F1" },
   clap:    "---- ---- 3--- ----",
@@ -396,14 +96,14 @@ const buildUp = section({
   hat:     "1111 1111 1111 1111",
 });
 // ends a beat early: the silence before the drop
-const buildPeak = section({
+const trapPeak = trap({
   clap:    "---- ---- 3--- ----",
   snare:  ["2222 3333 3333 ----",
            "---- 2222 3344 ----"],
   hat:    ["1111 1111 ---- ----",
            "2222 2222 ---- ----"],
 });
-const chorus = section({
+const trapChorus = trap({
   kick:    "3--- ---2 --3- -2--",
   bass:   { hits: "3--- ---2 --3- -2--", notes: "F1 C2 ~A#1 ~G#1" },
   clap:    "---- ---- 3--- ----",
@@ -413,7 +113,7 @@ const chorus = section({
   openHat: "---- --2- ---- ----",
   cowbell: "2--1 --2- 2--1 --2-",
 });
-const chorusFill = section({
+const trapFill = trap({
   kick:    "3--- ---2 --3- ----",
   bass:   { hits: "3--- ---2 --3- ----", notes: "F1 ~F2 ~C2" },
   clap:    "---- ---- 3--- ----",
@@ -430,13 +130,16 @@ const chorusFill = section({
 // low-pass, the build-up thins out through a rising high-pass, and the drop
 // snaps it open. After the chorus fill it loops back to the groove.
 export const DEMO_SONG = {
-  payload: {
-    ...payload(140, [intro, groove, buildUp, buildPeak, chorus, chorusFill], {
-      reverb: 0.15,
-      filter: -85,
-    }),
-    bass: { decay: 1.1, drive: 45, glide: 90 },
-  },
+  name: "Trap Demo",
+  meta: "808 · 140 · 6 pads",
+  about:
+    "The power-on song in F minor: intro, groove, build-up, drop. Hear the 808 slide (~ on its pads), the hat rolls (sliced pads) and the FILTER sweeps.",
+  payload: payload(
+    140,
+    [trapIntro, trapGroove, trapBuildUp, trapPeak, trapChorus, trapFill],
+    { reverb: 0.15, filter: -85 },
+    { decay: 1.1, drive: 45, glide: 90 }
+  ),
   bars: [
     { pad: 0, filter: [-85, -70] },
     { pad: 0, filter: [-70, -25] },
@@ -453,3 +156,162 @@ export const DEMO_SONG = {
   ],
   loopFrom: 2,
 };
+
+// ---- Boom bap in D minor: 58% swing pushes every second 16th late, soft
+// ghost snares sit between the backbeats, and the hook layers the 808 clap
+// over the hip hop snare. ----
+const boomBap = tabs("hiphop", {
+  kick: ["hiphop", 0],
+  bass: ["synth", 0],
+  snare: ["hiphop", 1],
+  clap: ["808", 4],
+  ghost: ["hiphop", 4],
+  hat: ["hiphop", 2],
+  openHat: ["hiphop", 3],
+  rim: ["808", 7],
+});
+
+const boomIntro = boomBap({
+  kick:    "3--- ---- --2- ----",
+  hat:     "2-1- 2-1- 2-1- 2-11",
+  rim:     "---- 2--- ---- 2---",
+});
+const boomVerse = boomBap({
+  kick:    "3--- ---2 --3- ----",
+  bass:   { hits: "3--- ---- --2- ----", notes: "D1 F1" },
+  snare:   "---- 3--- ---- 3---",
+  ghost:   "---- ---- -1-- ---1",
+  hat:     "2-1- 2-11 2-1- 2-1-",
+});
+const boomVerseB = boomBap({
+  kick:    "3--- ---2 --3- -2--",
+  bass:   { hits: "3--- ---- --2- -2--", notes: "D1 A1 G1" },
+  snare:   "---- 3--- ---- 3---",
+  ghost:   "--1- ---1 -1-- ---1",
+  hat:     "2-1- 2-11 2-1- 2---",
+  openHat: "---- ---- ---- --2-",
+});
+const boomHook = boomBap({
+  kick:    "3--- ---2 --3- -2--",
+  bass:   { hits: "3--- ---2 --3- ----", notes: "D1 C2 A1" },
+  snare:   "---- 3--- ---- 3---",
+  clap:    "---- 2--- ---- 2---",
+  ghost:   "---- ---1 -1-- ---1",
+  hat:     "3-1- 2-11 3-1- 2---",
+  openHat: "---- ---- ---- --2-",
+});
+// drops the hats on beat 4 for a ghost-snare pickup into the next bar
+const boomTurn = boomBap({
+  kick:    "3--- ---- --3- ----",
+  bass:   { hits: "3--- ---- --2- ----", notes: "D1 C1" },
+  snare:   "---- 3--- ---- 3---",
+  ghost:   "---- ---- -1-1 -123",
+  hat:     "2-1- 2-1- 2-1- ----",
+});
+
+const BOOM_BAP = {
+  name: "Boom Bap",
+  meta: "Hip Hop · 90 · 5 pads",
+  about:
+    "Laid back at 58% SWING: a muffled intro, verse, hook, turnaround. Hear the soft ghost snares (half-lit pads), a long 808 under the kick, and the 808 clap layered on the hook.",
+  payload: payload(
+    90,
+    [boomIntro, boomVerse, boomVerseB, boomHook, boomTurn],
+    { swing: 58, reverb: 0.12, filter: -55 },
+    { decay: 1.4, drive: 20, glide: 80 }
+  ),
+  bars: [
+    { pad: 0, filter: [-55, -55] },
+    { pad: 0, filter: [-55, -20] },
+    { pad: 1, filter: [0, 0] },
+    { pad: 1 },
+    { pad: 2 },
+    { pad: 4 },
+    { pad: 3 },
+    { pad: 3 },
+    { pad: 3 },
+    { pad: 4 },
+  ],
+  loopFrom: 2,
+};
+
+// ---- House in A minor on the 707: every pad adds a layer, then a snare
+// roll (ROLL 2 to 4) builds under a rising high-pass into the drop. ----
+const house = tabs("707", {
+  kick: ["707", 0],
+  bass: ["synth", 0],
+  clap: ["707", 4],
+  snare: ["707", 1],
+  hat: ["707", 2],
+  openHat: ["707", 3],
+  tamb: ["707", 5],
+});
+
+const houseIntro = house({
+  kick:    "3--- 3--- 3--- 3---",
+  hat:     "21-1 21-1 21-1 21-1",
+});
+const houseGroove = house({
+  kick:    "3--- 3--- 3--- 3---",
+  clap:    "---- 3--- ---- 3---",
+  hat:     "21-1 21-1 21-1 21-1",
+  openHat: "--2- --2- --2- --2-",
+});
+const houseBass = house({
+  kick:    "3--- 3--- 3--- 3---",
+  bass:   { hits: "--3- --2- --3- -22-", notes: "A1 A1 C2 A1 G1" },
+  clap:    "---- 3--- ---- 3---",
+  hat:     "21-1 21-1 21-1 21-1",
+  openHat: "--2- --2- --2- --2-",
+});
+const houseBuild = house({
+  kick:    "3--- 3--- 3--- 3---",
+  bass:   { hits: "3--- ---- ---- ----", notes: "A1" },
+  clap:    "---- 3--- ---- 3---",
+  snare:   "2-2- 2-2- 2-2- 2-2-",
+  hat:     "1-1- 1-1- 1-1- 1-1-",
+});
+// ends a beat early: the silence before the drop
+const housePeak = house({
+  kick:    "3--- 3--- 3--- ----",
+  snare:  ["2222 2222 3333 ----",
+           "---- 2222 3344 ----"],
+});
+const houseDrop = house({
+  kick:    "3--- 3--- 3--- 3---",
+  bass:   { hits: "--3- --2- --3- -22-", notes: "A1 A1 C2 A1 ~G1" },
+  clap:    "---- 3--- ---- 3---",
+  hat:     "31-1 21-1 31-1 21-1",
+  openHat: "--3- --2- --3- --2-",
+  tamb:    "--1- --2- --1- --2-",
+});
+
+const HOUSE = {
+  name: "House",
+  meta: "707 · 124 · 6 pads",
+  about:
+    "Four on the floor, one layer per pad: intro, clap and hats, bassline, then a snare roll (ROLL 2 to 4) under a rising high-pass, and the drop.",
+  payload: payload(
+    124,
+    [houseIntro, houseGroove, houseBass, houseBuild, housePeak, houseDrop],
+    { reverb: 0.1, filter: -80 },
+    { decay: 0.4, drive: 35, glide: 60 }
+  ),
+  bars: [
+    { pad: 0, filter: [-80, -55] },
+    { pad: 0, filter: [-55, -10] },
+    { pad: 1, filter: [0, 0] },
+    { pad: 1 },
+    { pad: 2 },
+    { pad: 2 },
+    { pad: 3, filter: [0, 40] },
+    { pad: 4, filter: [40, 85] },
+    { pad: 5, filter: [0, 0] },
+    { pad: 5 },
+    { pad: 5 },
+    { pad: 5 },
+  ],
+  loopFrom: 2,
+};
+
+export const PRESETS = [DEMO_SONG, BOOM_BAP, HOUSE];

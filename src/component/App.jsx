@@ -7,6 +7,7 @@ import Pattern from "./Pattern.component";
 import Board from "./Board.component";
 import Library from "./Library.component";
 import Intro, { firstPhase } from "./Intro.component";
+import Help from "./Help.component";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 
 // MUI theme still drives the dark menus, select and snackbar
@@ -28,12 +29,13 @@ const theme = createTheme({
 
 const App = () => {
   const [intro, setIntro] = useState(firstPhase);
+  const [helpOpen, setHelpOpen] = useState(false);
   const machineState = { off: " is-off", boot: " is-booting" }[intro] || "";
 
   return (
     <ThemeProvider theme={theme}>
       <div className={"Machine" + machineState}>
-        <Header onTour={() => setIntro("tour")} />
+        <Header onHelp={() => setHelpOpen(true)} />
         <Display />
         <div className="Machine-crow">
           <ControlPanel />
@@ -45,6 +47,14 @@ const App = () => {
       </div>
       <Library />
       <Intro phase={intro} setPhase={setIntro} />
+      <Help
+        open={helpOpen}
+        onClose={() => setHelpOpen(false)}
+        onTour={() => {
+          setHelpOpen(false);
+          setIntro("tour");
+        }}
+      />
     </ThemeProvider>
   );
 };
