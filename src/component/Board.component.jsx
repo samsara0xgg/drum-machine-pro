@@ -20,7 +20,8 @@ import {
 } from "../service/kits";
 import { Context } from "../Context";
 import { pageForStep, stepsForPage } from "../service/mobile";
-import { paint } from "../service/groove";
+import { isSilent, paint, stepLength } from "../service/groove";
+import { ensureAudioReady } from "../service/audio";
 import { DEFAULT_NOTE } from "../service/bass808";
 import BassPanel from "./Board/BassPanel.component";
 
@@ -54,6 +55,12 @@ const Board = () => {
     seekTo,
     buffersRef,
     started,
+    playStep,
+    bpm,
+    swing,
+    pitch,
+    bassDecay,
+    bassGlide,
   } = useContext(Context);
 
   const isMobile = useMediaQuery("(max-width:600px)");
@@ -118,32 +125,45 @@ const Board = () => {
     updateChannels((rows) => rows.filter((c) => c.uid !== uid));
   };
 
-  const paintStep = (uid, step) => {
-    updateChannels((rows) =>
-      rows.map((c) => {
-        if (c.uid !== uid) return c;
-        const synth = isSynth(c);
-        const next = paint(
-          {
-            level: c.steps[step],
-            roll: c.rolls[step],
-            ...(synth && { note: c.notes[step], slide: c.slides[step] }),
-          },
-          {
-            level: brush,
-            roll: rollBrush,
-            ...(synth && { note: noteBrush, slide: slideBrush }),
-          }
-        );
-        const set = (list, value) => list.map((v, i) => (i === step ? value : v));
-        return {
-          ...c,
-          steps: set(c.steps, next.level),
-          rolls: set(c.rolls, next.roll),
-          ...(synth && { notes: set(c.notes, next.note), slides: set(c.slides, next.slide) }),
-        };
-      })
+  // A row with one step painted by the brushes.
+  const paintRow = (c, step) => {
+    const synth = isSynth(c);
+    const next = paint(
+      {
+        level: c.steps[step],
+        roll: c.rolls[step],
+        ...(synth && { note: c.notes[step], slide: c.slides[step] }),
+      },
+      {
+        level: brush,
+        roll: rollBrush,
+        ...(synth && { note: noteBrush, slide: slideBrush }),
+      }
     );
+    const set = (list, value) => list.map((v, i) => (i === step ? value : v));
+    return {
+      ...c,
+      steps: set(c.steps, next.level),
+      rolls: set(c.rolls, next.roll),
+      ...(synth && { notes: set(c.notes, next.note), slides: set(c.slides, next.slide) }),
+    };
+  };
+
+  const paintStep = (uid, step) => {
+    updateChannels((rows) => rows.map((c) => (c.uid === uid ? paintRow(c, step) : c)));
+    // Stopped, a pad that lights up plays once, the way a hardware pad does
+    // (while playing, the loop plays it). resume() has to start inside the click (iOS).
+    const row = paintRow(channels.find((c) => c.uid === uid), step);
+    if (started || !row.steps[step]) return;
+    ensureAudioReady(audioCtx)
+      .then(() =>
+        playStep(row, step, audioCtx.currentTime + 0.01, stepLength(step, 60 / bpm / 4, swing), {
+          pitch,
+          decay: bassDecay,
+          glide: bassGlide,
+        })
+      )
+      .catch(() => {});
   };
 
   const toggleFlag = (uid, flag) => {
@@ -211,6 +231,7 @@ const Board = () => {
                 <Channel
                   key={channel.uid}
                   channel={channel}
+                  silent={isSilent(channel, channels.some((c) => c.solo))}
                   currentStep={currentStep}
                   paintStep={paintStep}
                   toggleFlag={toggleFlag}

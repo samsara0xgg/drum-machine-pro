@@ -295,8 +295,12 @@ body {
     padding: 0;
     background-color: #242424;
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06), 0 2px 3px black;
-    transition: background-color 0.15s;
+    transition: background-color 0.15s, transform 0.1s $ease-out;
     cursor: pointer;
+
+    &:active {
+      transform: scale(0.96);
+    }
 
     &__tri {
       position: absolute;
@@ -510,6 +514,11 @@ body {
 
     &__group {
       display: inline-block;
+      transition: opacity 0.15s $ease-out;
+    }
+    // a row that won't sound (muted, or another row soloed) dims its pads
+    &.is-silent &__group {
+      opacity: 0.35;
     }
     &__item {
       display: inline-flex;
@@ -531,6 +540,24 @@ body {
       white-space: nowrap;
       overflow: hidden;
       cursor: pointer;
+      // Afterglow: a sounding pad lights at once (below) and fades as the
+      // playhead moves on, like a hardware LED. The layer sits under the
+      // note text and repeats the roll slices so they show through it.
+      position: relative;
+      isolation: isolate;
+
+      &::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+        border-radius: inherit;
+        background-color: #eaffc7;
+        background-image: inherit;
+        opacity: 0;
+        transition: opacity 0.2s $ease-out;
+        pointer-events: none;
+      }
 
       &[aria-pressed="true"] {
         background-color: $Primary-200;
@@ -571,6 +598,13 @@ body {
       }
       &[aria-pressed="true"][data-level="3"] {
         box-shadow: inset 0 0 0 2px #ffffff, 0 0 8px rgba(209, 249, 152, 0.45), 0 1px 2px black;
+      }
+      &[aria-pressed="true"]::after {
+        opacity: 1;
+        transition: none;
+      }
+      &[aria-pressed="true"][data-level="1"]::after {
+        opacity: 0.6;
       }
     }
 
@@ -1246,6 +1280,19 @@ li {
     .Board-Channel {
       grid-template-columns: 104px minmax(0, 1fr) 24px;
     }
+  }
+}
+
+// Press feedback: pads and the machine's small buttons give a little under
+// the finger. Subtle, since they are pressed constantly.
+.Board-Channel__item,
+.Pattern-pad,
+.Board-Brush__button,
+.Board-pager__button {
+  transition: transform 0.1s $ease-out;
+
+  &:active {
+    transform: scale(0.96);
   }
 }
 

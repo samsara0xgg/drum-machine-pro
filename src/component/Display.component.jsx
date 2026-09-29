@@ -3,9 +3,9 @@ import { Context } from "../Context";
 import { KITS, loadSample, sampleDef } from "../service/kits";
 import { ensureAudioReady } from "../service/audio";
 import {
-  VELOCITY_GAIN,
   filterHz,
   filterLabel,
+  isSilent,
   nextBar,
   stepLength,
   swingDelay,
@@ -73,7 +73,7 @@ const Display = () => {
     bass,
     bassDecay,
     bassGlide,
-    fxIn,
+    playStep,
     paramFlash,
     bpmFlash,
     toast,
@@ -159,52 +159,17 @@ const Display = () => {
     let nextNoteTime = audioCtx.currentTime;
     let timerID;
 
-    // Schedule every active channel of one pattern for this step; a roll
-    // splits the step's span into evenly spaced hits. Returns the loudest
-    // kick level sounded, which drives the bezel pulse.
+    // Schedule every sounding channel of one pattern for this step. Returns
+    // the loudest kick level sounded, which drives the bezel pulse.
     const scheduleNote = (channels, beatNumber, time, span) => {
       const anySolo = channels.some((c) => c.solo);
       let kick = 0;
 
       channels.forEach((channel) => {
         const level = channel.steps[beatNumber];
-        if (!level) return;
-        if (channel.muted || (anySolo && !channel.solo)) return;
-
-        const def = sampleDef(channel);
-        const roll = channel.rolls[beatNumber];
-
-        // The 808 row plays its note on the synth voice; a slide applies to
-        // the first hit of a roll, the rest restrike.
-        if (def.synth) {
-          for (let hit = 0; hit < roll; hit++) {
-            bass.play(
-              time + (hit * span) / roll,
-              channel.notes[beatNumber] + pitchRef.current,
-              def.gain * VELOCITY_GAIN[level],
-              {
-                decay: bassRef.current.decay,
-                glide: bassRef.current.glide / 1000,
-                slide: hit === 0 && channel.slides[beatNumber] === 1,
-              }
-            );
-          }
-          return;
-        }
-
-        const buffer = buffersRef.current.get(def.sample);
-        if (!buffer) return; // still loading
-        if (def.id.startsWith("Bass")) kick = Math.max(kick, level);
-
-        for (let hit = 0; hit < roll; hit++) {
-          const source = new AudioBufferSourceNode(audioCtx, { buffer });
-          // PITCH knob: one semitone doubles the rate every 12 steps.
-          source.playbackRate.value = 2 ** (pitchRef.current / 12);
-          const gainNode = new GainNode(audioCtx, { gain: def.gain * VELOCITY_GAIN[level] });
-          source.connect(gainNode);
-          gainNode.connect(fxIn);
-          source.start(time + (hit * span) / roll);
-        }
+        if (!level || isSilent(channel, anySolo)) return;
+        playStep(channel, beatNumber, time, span, { pitch: pitchRef.current, ...bassRef.current });
+        if (sampleDef(channel).id.startsWith("Bass")) kick = Math.max(kick, level);
       });
       return kick;
     };
@@ -292,10 +257,11 @@ const Display = () => {
       cancelAnimationFrame(rafID);
       bass.stop(); // an 808 tail can ring for seconds
     };
-    // flashParam is recreated every render but only wraps a stable setter,
-    // so it stays out of the deps (listing it would restart the clock).
+    // flashParam and playStep are recreated every render but only reach
+    // stable setters, refs and audio nodes, so they stay out of the deps
+    // (listing them would restart the clock).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [started, audioCtx, fxIn, buffersRef, setCurrentStep, nextStepRef, songRef, showPattern, setFilter, filterNodes, bass]);
+  }, [started, audioCtx, setCurrentStep, nextStepRef, songRef, showPattern, setFilter, filterNodes, bass]);
 
   return (
     <div className="Screen">
