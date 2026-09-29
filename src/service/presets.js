@@ -159,7 +159,8 @@ export const DEMO_SONG = {
 
 // ---- Boom bap in D minor: 58% swing pushes every second 16th late, soft
 // ghost snares sit between the backbeats, and the hook layers the 808 clap
-// over the hip hop snare. ----
+// over the hip hop snare. The 808 stays short and up in octave 2, so the
+// low end stays clear. ----
 const boomBap = tabs("hiphop", {
   kick: ["hiphop", 0],
   bass: ["synth", 0],
@@ -178,14 +179,14 @@ const boomIntro = boomBap({
 });
 const boomVerse = boomBap({
   kick:    "3--- ---2 --3- ----",
-  bass:   { hits: "3--- ---- --2- ----", notes: "D1 F1" },
+  bass:   { hits: "2--- ---- --2- ----", notes: "D2 F2" },
   snare:   "---- 3--- ---- 3---",
   ghost:   "---- ---- -1-- ---1",
   hat:     "2-1- 2-11 2-1- 2-1-",
 });
 const boomVerseB = boomBap({
   kick:    "3--- ---2 --3- -2--",
-  bass:   { hits: "3--- ---- --2- -2--", notes: "D1 A1 G1" },
+  bass:   { hits: "2--- ---- --2- -2--", notes: "D2 A2 G2" },
   snare:   "---- 3--- ---- 3---",
   ghost:   "--1- ---1 -1-- ---1",
   hat:     "2-1- 2-11 2-1- 2---",
@@ -193,7 +194,7 @@ const boomVerseB = boomBap({
 });
 const boomHook = boomBap({
   kick:    "3--- ---2 --3- -2--",
-  bass:   { hits: "3--- ---2 --3- ----", notes: "D1 C2 A1" },
+  bass:   { hits: "2--- ---2 --2- ----", notes: "D2 C2 A2" },
   snare:   "---- 3--- ---- 3---",
   clap:    "---- 2--- ---- 2---",
   ghost:   "---- ---1 -1-- ---1",
@@ -203,7 +204,7 @@ const boomHook = boomBap({
 // drops the hats on beat 4 for a ghost-snare pickup into the next bar
 const boomTurn = boomBap({
   kick:    "3--- ---- --3- ----",
-  bass:   { hits: "3--- ---- --2- ----", notes: "D1 C1" },
+  bass:   { hits: "2--- ---- --2- ----", notes: "D2 C2" },
   snare:   "---- 3--- ---- 3---",
   ghost:   "---- ---- -1-1 -123",
   hat:     "2-1- 2-1- 2-1- ----",
@@ -213,12 +214,12 @@ const BOOM_BAP = {
   name: "Boom Bap",
   meta: "Hip Hop · 90 · 5 pads",
   about:
-    "Laid back at 58% SWING: a muffled intro, verse, hook, turnaround. Hear the soft ghost snares (half-lit pads), a long 808 under the kick, and the 808 clap layered on the hook.",
+    "Laid back at 58% SWING: a muffled intro, verse, hook, turnaround. Hear the soft ghost snares (half-lit pads), a short 808 walking with the kick, and the 808 clap layered on the hook.",
   payload: payload(
     90,
     [boomIntro, boomVerse, boomVerseB, boomHook, boomTurn],
     { swing: 58, reverb: 0.12, filter: -55 },
-    { decay: 1.4, drive: 20, glide: 80 }
+    { decay: 0.45, drive: 35, glide: 80 }
   ),
   bars: [
     { pad: 0, filter: [-55, -55] },
@@ -314,73 +315,12 @@ const HOUSE = {
   loopFrom: 2,
 };
 
-// ---- Lo-fi in D minor: lazy 60% swing, the whole song under a gentle
-// low-pass, and a warm 808 walking the roots of Dm7, G7, Cmaj7, Am7. The
-// break dips the filter further, then brings it back. ----
-const lofi = tabs("hiphop", {
-  kick: ["hiphop", 0],
-  bass: ["synth", 0],
-  snare: ["hiphop", 1],
-  hat: ["hiphop", 5],
-  openHat: ["hiphop", 3],
-  rim: ["linndrum", 6],
-});
-
-const lofiIntro = lofi({
-  hat:     "2-1- 2-11 2-1- 2-11",
-  rim:     "---- 2--- ---- 2---",
-});
-const lofiA = lofi({
-  kick:    "3--- ---1 --2- ----",
-  bass:   { hits: "2--- ---- 2--- -1--", notes: "D1 G1 A1" },
-  snare:   "---- 3--- ---- 3---",
-  hat:     "2-1- 2-11 2-1- 2-11",
-  rim:     "---- ---- ---- ---1",
-});
-const lofiB = lofi({
-  kick:    "3--- ---1 --2- -1--",
-  bass:   { hits: "2--- ---- 2--- -1--", notes: "C2 A1 E1" },
-  snare:   "---- 3--- ---- 3--1",
-  hat:     "2-1- 2-11 2-1- 2---",
-  openHat: "---- ---- ---- --1-",
-});
-const lofiBreak = lofi({
-  bass:   { hits: "2--- ---- 2--- -1--", notes: "D1 G1 A1" },
-  hat:     "1-1- 1-11 1-1- 1-11",
-  rim:     "---- 2--- ---- 2---",
-});
-
-const LOFI = {
-  name: "Lo-fi Study",
-  meta: "Hip Hop + Linn · 78 · 4 pads",
-  about:
-    "Late-night lo-fi at 60% SWING, the whole song under a soft low-pass (FILTER) with plenty of REVERB. A warm 808 walks the chords; the break dips the filter even lower.",
-  payload: payload(
-    78,
-    [lofiIntro, lofiA, lofiB, lofiBreak],
-    { swing: 60, reverb: 0.3, filter: -70 },
-    { decay: 1.6, drive: 10, glide: 120 }
-  ),
-  bars: [
-    { pad: 0, filter: [-70, -60] },
-    { pad: 0, filter: [-60, -35] },
-    { pad: 1 },
-    { pad: 2 },
-    { pad: 1 },
-    { pad: 2 },
-    { pad: 3, filter: [-35, -60] },
-    { pad: 2, filter: [-60, -35] },
-    { pad: 1 },
-    { pad: 2 },
-  ],
-  loopFrom: 2,
-};
-
 // ---- Reggaeton in A minor: the dembow (kick on every beat, snare on the
 // "boom-ch-boom-chick"), an 808 following the snare through Am, F, C, G,
-// and timbale-style tom fills. The intro is thin, through a high-pass. ----
+// and timbale-style tom fills. The intro is thin, through a high-pass. The
+// tight 707 kick and a short 808 keep the low end from booming. ----
 const reggaeton = tabs("808", {
-  kick: ["808", 0],
+  kick: ["707", 0],
   bass: ["synth", 0],
   snare: ["808", 1],
   clap: ["808", 4],
@@ -398,27 +338,27 @@ const rgIntro = reggaeton({
 });
 const rgVerseA = reggaeton({
   kick:    "3--- 3--- 3--- 3---",
-  bass:   { hits: "3--2 --2- 3--2 --2-", notes: "A1 A1 A1 F1 F1 F1" },
+  bass:   { hits: "2--1 --1- 2--1 --1-", notes: "A2 A2 A2 F2 F2 F2" },
   snare:   "---2 --2- ---2 --2-",
   hat:     "2-1- 2-1- 2-1- 2-1-",
 });
 const rgVerseB = reggaeton({
   kick:    "3--- 3--- 3--- 3---",
-  bass:   { hits: "3--2 --2- 3--2 --2-", notes: "C2 C2 C2 G1 G1 G1" },
+  bass:   { hits: "2--1 --1- 2--1 --1-", notes: "C2 C2 C2 G2 G2 G2" },
   snare:   "---2 --2- ---2 --2-",
   hat:     "2-1- 2-1- 2-1- 2---",
   openHat: "---- ---- ---- --2-",
 });
 const rgHookA = reggaeton({
   kick:    "3--- 3--- 3--- 3---",
-  bass:   { hits: "3--2 --2- 3--2 --2-", notes: "A1 A1 A1 F1 F1 F1" },
+  bass:   { hits: "2--1 --1- 2--1 --1-", notes: "A2 A2 A2 F2 F2 F2" },
   snare:   "---3 --3- ---3 --3-",
   clap:    "---2 --2- ---2 --2-",
   hat:     "2121 2121 2121 2121",
 });
 const rgHookB = reggaeton({
   kick:    "3--- 3--- 3--- 3---",
-  bass:   { hits: "3--2 --2- 3--2 --2-", notes: "C2 C2 C2 G1 G1 G1" },
+  bass:   { hits: "2--1 --1- 2--1 --1-", notes: "C2 C2 C2 G2 G2 G2" },
   snare:   "---3 --3- ---3 --3-",
   clap:    "---2 --2- ---2 --2-",
   hat:     "2121 2121 2121 21--",
@@ -427,7 +367,7 @@ const rgHookB = reggaeton({
 // the toms tumble down over beats 3 and 4 into the next section
 const rgFill = reggaeton({
   kick:    "3--- 3--- 3--- ----",
-  bass:   { hits: "3--2 --2- 3--- ----", notes: "C2 C2 C2 G1" },
+  bass:   { hits: "2--1 --1- 2--- ----", notes: "C2 C2 C2 G2" },
   snare:   "---2 --2- ---- ----",
   hat:     "2-1- 2-1- ---- ----",
   hiTom:   "---- ---- 3-2- ----",
@@ -437,14 +377,14 @@ const rgFill = reggaeton({
 
 const REGGAETON = {
   name: "Reggaeton",
-  meta: "808 · 95 · 6 pads",
+  meta: "808 + 707 · 95 · 6 pads",
   about:
     "The dembow beat: kick on every beat, snare on the boom-ch-boom-chick. It opens thin through a high-pass (FILTER right), then an 808 follows the snare and tom fills lead into the hook.",
   payload: payload(
     95,
     [rgIntro, rgVerseA, rgVerseB, rgHookA, rgHookB, rgFill],
     { reverb: 0.08, filter: 70 },
-    { decay: 0.5, drive: 50, glide: 60 }
+    { decay: 0.3, drive: 50, glide: 60 }
   ),
   bars: [
     { pad: 0, filter: [70, 70] },
@@ -474,8 +414,8 @@ const amapiano = tabs("707", {
   cowbell: ["808", 5],
 });
 
-const LOG_A = { hits: "3--2 --3- --2- 2-2-", notes: "F1 F2 C2 ~D#2 C2 ~G#1" };
-const LOG_B = { hits: "3--2 --3- --2- 2--2", notes: "C#2 C#1 G#1 ~C2 G#1 ~A#1" };
+const LOG_A = { hits: "3--2 --3- --2- 2-2-", notes: "F2 C2 F2 ~D#2 C2 ~G#2" };
+const LOG_B = { hits: "3--2 --3- --2- 2--2", notes: "C#2 G#2 C#2 ~C2 D#2 ~F2" };
 const apIntro = amapiano({
   shaker:  "1121 1121 1121 1121",
   rim:     "---- --2- ---- -2-2",
@@ -525,7 +465,7 @@ const AMAPIANO = {
     113,
     [apIntro, apA, apB, apSolo, apDropA, apDropB],
     { swing: 54, reverb: 0.15, filter: -80 },
-    { decay: 0.45, drive: 60, glide: 70 }
+    { decay: 0.22, drive: 65, glide: 70 }
   ),
   bars: [
     { pad: 0, filter: [-80, -50] },
@@ -560,7 +500,7 @@ const neon = tabs("linndrum", {
 });
 
 const OCTAVES_A = { hits: "2-1- 2-1- 2-1- 2-1-", notes: "A1 A2 A1 A2 F1 F2 F1 F2" };
-const OCTAVES_B = { hits: "2-1- 2-1- 2-1- 2-1-", notes: "C1 C2 C1 C2 G1 G2 G1 G2" };
+const OCTAVES_B = { hits: "2-1- 2-1- 2-1- 2-1-", notes: "C2 G2 C2 G2 G1 G2 G1 G2" };
 const neIntro = neon({
   kick:    "3--- ---- 3--- ----",
   hat:     "2121 2121 2121 2121",
@@ -595,7 +535,7 @@ const neChorusB = neon({
 });
 const neFill = neon({
   kick:    "3--- ---- 3--- ----",
-  bass:   { hits: "2-1- 2-1- 2--- ----", notes: "C1 C2 C1 C2 G1" },
+  bass:   { hits: "2-1- 2-1- 2--- ----", notes: "C2 G2 C2 G2 G1" },
   snare:   "---- 3--- ---- ----",
   hat:     "2121 2121 ---- ----",
   hiTom:   "---- ---- 32-- ----",
@@ -629,4 +569,90 @@ const NEON_80S = {
   loopFrom: 2,
 };
 
-export const PRESETS = [DEMO_SONG, BOOM_BAP, HOUSE, LOFI, REGGAETON, AMAPIANO, NEON_80S];
+// ---- UK garage in A minor on the 707: the skippy two-step kick, hats
+// shuffled by 58% swing, and a bouncy bass kept up in octave 2. A break
+// without the kick rises through a high-pass into the drop. ----
+const garage = tabs("707", {
+  kick: ["707", 0],
+  bass: ["synth", 0],
+  clap: ["707", 4],
+  rim: ["808", 7],
+  hat: ["707", 2],
+  openHat: ["707", 3],
+  tamb: ["707", 5],
+});
+
+const GARAGE_A = { hits: "2--2 --2- --2- -2--", notes: "A2 A2 G2 E2 G2" };
+const GARAGE_B = { hits: "2--2 --2- --2- -2--", notes: "F2 F2 E2 C2 D2" };
+const gIntro = garage({
+  hat:     "-121 -121 -121 -121",
+  rim:     "---2 --2- ---- -2--",
+});
+const gA = garage({
+  kick:    "3--- ---- --3- ----",
+  bass:    GARAGE_A,
+  clap:    "---- 3--- ---- 3---",
+  hat:     "-121 -121 -121 -121",
+  rim:     "---2 ---- ---- -2--",
+});
+const gB = garage({
+  kick:    "3--- ---1 --3- ----",
+  bass:    GARAGE_B,
+  clap:    "---- 3--- ---- 3---",
+  hat:     "-121 -121 -121 -1--",
+  openHat: "---- ---- ---- --2-",
+  rim:     "---2 ---- ---- ----",
+});
+const gBreak = garage({
+  bass:    GARAGE_A,
+  clap:    "---- 3--- ---- 3---",
+  hat:     "-121 -121 -121 -121",
+  rim:     "---2 --2- ---2 --2-",
+});
+const gDropA = garage({
+  kick:    "3--- ---- --3- ----",
+  bass:    GARAGE_A,
+  clap:    "---- 3--- ---- 3---",
+  hat:     "-1-1 -1-1 -1-1 -1-1",
+  openHat: "--2- --2- --2- --2-",
+  tamb:    "2--- 2--- 2--- 2---",
+  rim:     "---2 ---- ---- -2--",
+});
+const gDropB = garage({
+  kick:    "3--- ---1 --3- ----",
+  bass:    GARAGE_B,
+  clap:    "---- 3--- ---- 3---",
+  hat:     "-1-1 -1-1 -1-1 -1-1",
+  openHat: "--2- --2- --2- --2-",
+  tamb:    "2--- 2--- 2--- 2---",
+});
+
+const GARAGE = {
+  name: "UK Garage",
+  meta: "707 · 132 · 6 pads",
+  about:
+    "House's skippy cousin: a two-step kick, hats shuffled by 58% SWING and a bouncy bass. A break without the kick rises through a high-pass, then the drop adds open hats and tambourine.",
+  payload: payload(
+    132,
+    [gIntro, gA, gB, gBreak, gDropA, gDropB],
+    { swing: 58, reverb: 0.12, filter: -70 },
+    { decay: 0.3, drive: 55, glide: 50 }
+  ),
+  bars: [
+    { pad: 0, filter: [-70, -40] },
+    { pad: 0, filter: [-40, -5] },
+    { pad: 1, filter: [0, 0] },
+    { pad: 2 },
+    { pad: 1 },
+    { pad: 2 },
+    { pad: 3, filter: [0, 30] },
+    { pad: 3, filter: [30, 70] },
+    { pad: 4, filter: [0, 0] },
+    { pad: 5 },
+    { pad: 4 },
+    { pad: 5 },
+  ],
+  loopFrom: 2,
+};
+
+export const PRESETS = [DEMO_SONG, HOUSE, GARAGE, NEON_80S, BOOM_BAP, REGGAETON, AMAPIANO];

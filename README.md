@@ -24,10 +24,10 @@ Audio API. Deployed on Vercel and Railway (API + MySQL).
   switchable mid-playback, with cross-kit channel mixing
 - Master FX rack: pitch, pan, convolution reverb, and a DJ filter (low-pass / high-pass)
 - Kick-reactive glow and a live oscilloscope on the screen
-- Library drawer: seven preset songs (the trap demo, boom bap, house, lo-fi,
-  reggaeton, amapiano, 80s synth-pop) that play through their sections, each
-  showing off different features; save patterns locally, or share any pattern
-  as a short link (`/p/xxxxxxxx`)
+- Library drawer: seven preset songs (the trap demo, house, UK garage, 80s
+  synth-pop, boom bap, reggaeton, amapiano) that play through their sections,
+  each showing off different features; save patterns locally, or share any
+  pattern as a short link (`/p/xxxxxxxx`)
 
 ## Run with Docker
 
