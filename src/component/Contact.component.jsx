@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { AUTHOR, FORM_ACTION, FORM_ENDPOINT, MAIL_TAG } from "../service/site";
+import { AUTHOR, FORM_ENDPOINT, FORM_KEY, MAIL_TAG } from "../service/site";
 
 const EMPTY = { email: "", subject: "", message: "", honey: "" };
 
@@ -10,19 +10,16 @@ const Contact = ({ open, onClose }) => {
   const closeRef = useRef(null);
   const addressRef = useRef(null);
   const [form, setForm] = useState(EMPTY);
-  // idle | sending | sent | handed-off | error
+  // idle | sending | sent | error
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState("");
-  // The background send couldn't reach FormSubmit: SEND now posts the form
-  // itself into a new tab instead.
-  const [fallback, setFallback] = useState(false);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (!open) return;
     setCopied(false);
     // A draft survives closing the sheet; a sent message starts a fresh one.
-    if (status === "sent" || status === "handed-off") {
+    if (status === "sent") {
       setForm(EMPTY);
       setStatus("idle");
     }
@@ -37,28 +34,21 @@ const Contact = ({ open, onClose }) => {
     onChange: (e) => setForm({ ...form, [key]: e.target.value }),
   });
   const replyTo = form.email.trim();
-  const subject = `${MAIL_TAG} ${form.subject.trim() || "Message from the site"}`;
 
   const send = async (e) => {
-    if (fallback) {
-      // Let the browser post the form into a new tab. The form must still be
-      // on the page when it does, so it's swapped for the note a tick later.
-      setTimeout(() => setStatus("handed-off"), 0);
-      return;
-    }
     e.preventDefault();
+    // Only a bot fills the field people never see: drop it quietly.
+    if (form.honey) return setStatus("sent");
     setStatus("sending");
     setError("");
-    // Form-encoded with only an Accept header: a "simple" cross-site
-    // request, so the browser sends it without a CORS preflight first.
-    const body = new URLSearchParams({
-      _subject: subject,
-      _template: "table",
-      _honey: form.honey,
-      from: replyTo || "(not given)",
-      message: form.message,
-    });
-    if (replyTo) body.set("_replyto", replyTo);
+    // FormData, not JSON: a "simple" cross-site request, no CORS preflight.
+    const body = new FormData();
+    body.set("access_key", FORM_KEY);
+    body.set("subject", `${MAIL_TAG} ${form.subject.trim() || "Message from the site"}`);
+    body.set("from_name", "Drum Machine Pro");
+    // Web3Forms sets this as the mail's reply-to
+    if (replyTo) body.set("email", replyTo);
+    body.set("message", form.message);
     try {
       const response = await fetch(FORM_ENDPOINT, {
         method: "POST",
@@ -66,18 +56,15 @@ const Contact = ({ open, onClose }) => {
         body,
       });
       const data = await response.json().catch(() => ({}));
-      if (!response.ok || String(data.success) !== "true") {
+      if (!response.ok || !data.success) {
         throw new Error(data.message || "The message didn't go through.");
       }
       setStatus("sent");
     } catch (err) {
       // fetch itself only throws when the mail service can't be reached
-      if (err instanceof TypeError) {
-        setFallback(true);
-        setError("Couldn't send from this page. SEND again to finish in a new tab.");
-      } else {
-        setError(`${err.message} Try again, or write to the address below.`);
-      }
+      const reason =
+        err instanceof TypeError ? "Couldn't reach the mail service." : err.message;
+      setError(`${reason} Try again, or write to the address below.`);
       setStatus("error");
     }
   };
@@ -110,42 +97,26 @@ const Contact = ({ open, onClose }) => {
           </button>
         </div>
 
-        {status === "sent" || status === "handed-off" ? (
+        {!FORM_KEY ? (
+          <p className="Contact-lead">
+            Questions, bugs or ideas for the machine? Write to {AUTHOR.name}.
+          </p>
+        ) : status === "sent" ? (
           <div className="Contact-sent" role="status">
-            {status === "sent" ? (
-              <>
-                <b>Sent. Thanks!</b>
-                <p>
-                  {AUTHOR.name} will read it soon
-                  {replyTo ? ` and can reply to ${replyTo}` : ""}.
-                </p>
-              </>
-            ) : (
-              <>
-                <b>Almost there</b>
-                <p>Your message opened in a new tab; finish sending it there.</p>
-              </>
-            )}
+            <b>Sent. Thanks!</b>
+            <p>
+              {AUTHOR.name} will read it soon
+              {replyTo ? ` and can reply to ${replyTo}` : ""}.
+            </p>
           </div>
         ) : (
-          <form
-            className="Contact-form"
-            action={FORM_ACTION}
-            method="POST"
-            target="_blank"
-            onSubmit={send}
-          >
+          <form className="Contact-form" onSubmit={send}>
             <p className="Contact-lead">
               Questions, bugs or ideas for the machine? Send {AUTHOR.name} a message.
             </p>
             <label className="Contact-field">
               <span>Your email</span>
-              <input
-                type="email"
-                name="from"
-                placeholder="Optional, for a reply"
-                {...bind("email")}
-              />
+              <input type="email" placeholder="Optional, for a reply" {...bind("email")} />
             </label>
             <label className="Contact-field">
               <span>Subject</span>
@@ -153,18 +124,12 @@ const Contact = ({ open, onClose }) => {
             </label>
             <label className="Contact-field">
               <span>Message</span>
-              <textarea name="message" rows={5} required maxLength={5000} {...bind("message")} />
+              <textarea rows={5} required maxLength={5000} {...bind("message")} />
             </label>
-            {/* what FormSubmit reads when the form posts itself */}
-            <input type="hidden" name="_subject" value={subject} />
-            <input type="hidden" name="_template" value="table" />
-            <input type="hidden" name="_captcha" value="false" />
-            {replyTo && <input type="hidden" name="_replyto" value={replyTo} />}
-            {/* a field people never see; bots that fill it are dropped */}
+            {/* a field people never see */}
             <input
               className="Contact-honey"
               type="text"
-              name="_honey"
               tabIndex={-1}
               autoComplete="off"
               aria-hidden="true"
@@ -181,14 +146,14 @@ const Contact = ({ open, onClose }) => {
                 className="Header-button Contact-send"
                 disabled={status === "sending" || !form.message.trim()}
               >
-                {status === "sending" ? "SENDING…" : fallback ? "SEND IN A NEW TAB" : "SEND"}
+                {status === "sending" ? "SENDING…" : "SEND"}
               </button>
             </div>
           </form>
         )}
 
         <div className="Contact-direct">
-          <span>Or write to</span>
+          <span>{FORM_KEY ? "Or write to" : "Email"}</span>
           <span ref={addressRef} className="Contact-email">
             {AUTHOR.email}
           </span>
