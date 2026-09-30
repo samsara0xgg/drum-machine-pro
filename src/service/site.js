@@ -20,4 +20,4 @@ export const MAIL_TAG = "[Drum Machine Pro]";
 // AUTHOR.email from web3forms.com; it can only send to that address, so it is
 // safe in the page. Without a key, Contact shows just the address.
 export const FORM_ENDPOINT = "https://api.web3forms.com/submit";
-export const FORM_KEY = "";
+export const FORM_KEY = "662e9a7c-24e7-4d3e-a31a-cab97463bb51";
