@@ -1300,10 +1300,10 @@ li {
   }
 }
 
-// The footer's CONTACT sheet (Contact.component.jsx): the address to copy,
-// and Gmail or the mail app to write from.
+// The footer's CONTACT sheet (Contact.component.jsx): a message form, and
+// the address to copy for anyone who'd rather use their own mail.
 .Contact {
-  width: min(460px, 100%);
+  width: min(480px, 100%);
 
   &-lead {
     margin: 8px 0 12px;
@@ -1311,43 +1311,96 @@ li {
     line-height: 1.5;
     @include fontdp(0.6);
   }
-  &-address {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 6px 6px 6px 14px;
-    border-radius: 8px;
-    background-color: #151515;
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.07);
-  }
-  &-email {
-    flex: 1;
-    min-width: 0;
-    overflow-wrap: anywhere;
-    font-family: $Mono;
-    font-size: 14px;
-    color: $Primary-200;
-    user-select: all;
-  }
-  &-links {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin: 12px 0 4px;
-  }
-  &-link {
-    display: inline-flex;
-    align-items: center;
-    text-decoration: none;
-  }
-  &-note {
-    margin: 10px 0 0;
-    font-size: 12.5px;
-    @include fontdp(0.5);
+  &-field {
+    display: block;
+    margin-bottom: 10px;
 
-    a {
+    span {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 9.5px;
+      font-weight: bold;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      @include fontdp(0.5);
+    }
+    input,
+    textarea {
+      width: 100%;
+      padding: 9px 12px;
+      border: none;
+      border-radius: 8px;
+      background-color: #151515;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+      font-family: inherit;
+      font-size: 14px;
+      @include fontdp(0.87);
+      resize: vertical;
+
+      &::placeholder {
+        @include fontdp(0.3);
+      }
+      &:focus {
+        outline: none;
+        box-shadow: inset 0 0 0 1px $Primary-200;
+      }
+    }
+  }
+  &-honey {
+    position: absolute;
+    left: -9999px;
+  }
+  &-error {
+    margin: 0 0 10px;
+    font-size: 12.5px;
+    line-height: 1.45;
+    color: #f2a38f;
+  }
+  &-actions {
+    display: flex;
+    justify-content: flex-end;
+  }
+  &-send:not(:disabled) {
+    color: $Primary-200;
+  }
+  &-sent {
+    margin: 10px 0 4px;
+    padding: 16px;
+    border-radius: 8px;
+    background-color: rgba(209, 249, 152, 0.07);
+    box-shadow: inset 0 0 0 1px rgba(209, 249, 152, 0.25);
+
+    b {
       color: $Primary-200;
     }
+    p {
+      margin: 4px 0 0;
+      font-size: 13px;
+      @include fontdp(0.7);
+    }
+  }
+  &-direct {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 10px;
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
+    font-size: 12.5px;
+    @include fontdp(0.5);
+  }
+  &-email {
+    font-family: $Mono;
+    font-size: 13px;
+    color: $Primary-200;
+    user-select: all;
+    overflow-wrap: anywhere;
+  }
+  &-copy {
+    margin-left: auto;
+    padding: 6px 10px;
+    font-size: 10.5px;
   }
 }
 
@@ -1638,6 +1691,12 @@ li {
   }
   .Board-bass {
     margin-left: 0;
+  }
+
+  // 16px keeps iOS from zooming the page when a field takes focus
+  .Contact-field input,
+  .Contact-field textarea {
+    font-size: 16px;
   }
 
   // stacked and centered, with finger-sized links
