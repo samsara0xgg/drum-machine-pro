@@ -116,15 +116,30 @@ const Contact = ({ open, onClose }) => {
             </p>
             <label className="Contact-field">
               <span>Your email</span>
-              <input type="email" placeholder="Optional, for a reply" {...bind("email")} />
+              <input
+                type="email"
+                placeholder="Where I can write back (optional)"
+                {...bind("email")}
+              />
             </label>
             <label className="Contact-field">
               <span>Subject</span>
-              <input type="text" maxLength={120} {...bind("subject")} />
+              <input
+                type="text"
+                maxLength={120}
+                placeholder="Say hi, pitch an idea, send a beat"
+                {...bind("subject")}
+              />
             </label>
             <label className="Contact-field">
               <span>Message</span>
-              <textarea rows={5} required maxLength={5000} {...bind("message")} />
+              <textarea
+                rows={5}
+                required
+                maxLength={5000}
+                placeholder="Made a groove you're proud of? Found a bug? Want to jam or build something together? Tell me about it. I read every message."
+                {...bind("message")}
+              />
             </label>
             {/* a field people never see */}
             <input

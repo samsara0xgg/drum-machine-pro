@@ -7,7 +7,7 @@ export const AUTHOR = {
   github: "https://github.com/samsara0xgg",
   // a copy of the GitHub avatar, so the page makes no third-party request
   avatar: "/assets/avatar.jpg",
-  email: "alllllenshi@gmail.com",
+  email: "samsara.hcoding@gmail.com",
 };
 
 export const REPO = "https://github.com/samsara0xgg/drum-machine-pro";
@@ -16,9 +16,8 @@ export const REPO = "https://github.com/samsara0xgg/drum-machine-pro";
 export const MAIL_TAG = "[Drum Machine Pro]";
 
 // The Contact sheet's form sends through Web3Forms, which mails it on, so no
-// visitor needs a mail app. FORM_KEY is an access key from web3forms.com;
-// messages go to the inbox it was created for, which may not be AUTHOR.email.
-// It can only send there, so it is safe in the page. Without a key, Contact
-// shows just the address.
+// visitor needs a mail app. FORM_KEY is the access key web3forms.com issued
+// for AUTHOR.email; it can only send to that inbox, so it is safe in the
+// page. Without a key, Contact shows just the address.
 export const FORM_ENDPOINT = "https://api.web3forms.com/submit";
 export const FORM_KEY = "662e9a7c-24e7-4d3e-a31a-cab97463bb51";
