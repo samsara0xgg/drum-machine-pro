@@ -1,4 +1,4 @@
-import React, { useContext, useLayoutEffect, useRef, useState } from "react";
+import React, { useContext, useEffect, useLayoutEffect, useRef, useState } from "react";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import { Context } from "../Context";
 import { DEMO_SONG, PRESETS } from "../service/presets";
@@ -26,44 +26,46 @@ export const firstPhase = () => {
   }
 };
 
+// A step with a panel opens the Library drawer or the "?" guide and points
+// inside it; the tour closes the panel again on the next step without one.
 const STEPS = [
   {
     title: "Drum Machine Pro",
-    text: "A 16-step drum machine in your browser: draw a beat on the pads, pick a classic kit, shape it with FX and chain patterns into a song. This tour walks through every part; use the buttons or ← →, and play along while it runs.",
-    mobileText: "A 16-step drum machine in your browser: draw a beat on the pads, pick a classic kit, shape it with FX and chain patterns into a song. Tap NEXT to walk through every part.",
+    text: "A 16-step drum machine in your browser: draw a beat on the pads, pick a classic kit, shape it with FX and chain patterns into a song. This tour shows each part, then opens the Library and the guide for you. Use the buttons or ← →.",
+    mobileText: "A 16-step drum machine in your browser: draw a beat on the pads, pick a classic kit, shape it with FX and chain patterns into a song. This tour shows each part, then opens the Library and the guide.",
   },
   {
     target: ".Screen",
     title: "Display",
-    text: "Shows the kit, the pattern and the tempo. Whatever knob you touch flashes its value on the left, and the faint line behind is the live waveform. The button on the right plays and pauses; so does Space.",
-    mobileText: "Shows the kit, the pattern and the tempo. The button on the right plays and pauses.",
+    text: "Shows the kit, the pattern and the tempo. A knob you touch flashes its value on the left, and the faint line behind is the live waveform. ▶ on the right plays and pauses; so does Space.",
+    mobileText: "Shows the kit, the pattern and the tempo. ▶ on the right plays and pauses.",
   },
   {
     target: ".Board",
     place: "above",
     title: "Sequencer",
-    text: "The grid is the beat. Each row is one sound, each column a 16th note, and the playhead sweeps left to right. Click a pad to light it and it plays on that step; click it again to clear it. While stopped, a pad plays once as it lights. Click a step number to move the playhead there.",
-    mobileText: "The grid is the beat. Each row is one sound, each column a 16th note. Tap a pad to light it, tap it again to clear it. The buttons on top show the 16 steps four at a time.",
+    text: "The grid is the beat: each row is one sound, each column a 16th note, and the playhead sweeps left to right. Click a pad to light it, click it again to clear it. While stopped, a pad plays once as it lights.",
+    mobileText: "The grid is the beat: each row is one sound, each column a 16th note. Tap a pad to light it, tap it again to clear it. The buttons on top show the 16 steps four at a time.",
   },
   {
     target: ".Board-tools",
     title: "Brushes",
-    text: "HIT and ROLL set how the next pads you click will play. SOFT pads are half-lit (ghost notes), HARD pads get a bright rim (accents). ROLL 2 to 4 fires a pad that many times within its step and draws it in slices: the fast hat rolls in the demo. To take a roll off, set ROLL to 1 and click the pad.",
-    mobileText: "HIT and ROLL set how the next pads you tap will play: SOFT is half-lit, HARD gets a bright rim, and ROLL 2 to 4 fires a pad that many times in its step, drawn as slices. To take a roll off, set ROLL to 1 and tap the pad.",
+    text: "HIT and ROLL set how the next pads you click will play. SOFT pads are half-lit (ghost notes), HARD ones get a bright rim (accents). ROLL 2 to 4 fires a pad that many times in its step and draws it in slices, like the demo's fast hats. To take a roll off, set ROLL to 1 and click the pad.",
+    mobileText: "HIT and ROLL set how the next pads you tap will play: SOFT is half-lit, HARD gets a bright rim, and ROLL 2 to 4 fires a pad that many times in its step, drawn as slices. ROLL 1 and a tap takes a roll off.",
   },
   {
     // every row can be deleted, so fall back to the add button
     target: [".Board-Channel__info", ".Board-AddChannel"],
     title: "Rows",
-    text: "A row's name is a menu: pick any sound from any kit. The green dot mutes the row, the red dot solos it, and rows that won't sound dim. Drag ≡ to reorder, ✕ deletes, and ADD CHANNEL+ under the grid adds a row.",
+    text: "A row's name is a menu: pick any sound from any kit. The green dot mutes the row, the red dot solos it. Drag ≡ to reorder, ✕ deletes, and ADD CHANNEL+ under the grid adds a row.",
     mobileText: "A row's name is a menu: pick any sound from any kit. The green dot mutes the row, the red dot solos it. ✕ deletes, and ADD CHANNEL+ under the grid adds a row.",
   },
   {
     // the keyboard only exists while the pattern has an 808 row
     target: [".Bass808", ".Board-bass"],
     title: "808 Bass",
-    text: "A synthesized 808 for basslines, played by its own row. + 808 BASS above the grid adds that row, and the same button hides or shows this keyboard. Click a key to hear a note and pick it, then click pads on the 808 Bass row; each pad shows its note. SLIDE glides into the note, the trap signature. Delete the row to remove the bass.",
-    mobileText: "A synthesized 808 for basslines. + 808 BASS above the grid adds its row, and the same button hides or shows this keyboard. Tap a key to pick a note, then tap pads on the 808 Bass row. SLIDE glides into the note.",
+    text: "A synthesized 808 for basslines, played by its own row. + 808 BASS above the grid adds that row, and the same button hides or shows this keyboard. Click a key to pick a note, then click pads on the 808 Bass row. SLIDE glides into the note. Delete the row to remove the bass.",
+    mobileText: "A synthesized 808 for basslines. + 808 BASS above the grid adds its row, and the same button hides or shows this keyboard. Tap a key to pick a note, then tap pads on the 808 Bass row.",
   },
   {
     target: ".Machine-card--master",
@@ -74,7 +76,7 @@ const STEPS = [
   {
     target: ".Machine-card--fx",
     title: "FX",
-    text: "Effects on the whole mix: PITCH tunes every sound up or down in semitones, PAN moves it left or right, REVERB puts it in a room. FILTER turned left muffles the mix, turned right thins it out: the demo's intro and build-up are this knob moving.",
+    text: "Effects on the whole mix: PITCH in semitones, PAN left or right, REVERB for a room. FILTER turned left muffles the mix, turned right thins it out: the demo's intro and build-up are this knob moving.",
   },
   {
     target: ".Machine-card--instrument",
@@ -87,33 +89,126 @@ const STEPS = [
     text: "12 pattern slots, each with its own beat and kit, so one machine holds a whole song. The demo walks pads 1 to 6 by itself: intro, groove, build-up, drop. Click a pad (or edit the grid) and it stays on that section.",
   },
   {
-    target: ".Header-burger",
-    title: "Library",
-    text: `☰ opens the Library. At the top, ${PRESETS.length} preset songs in different styles: pick one and it plays from the first bar, walking its pads, and each says what to listen for. Below, My patterns: everything you SAVE, kept in this browser; ⇪ copies a share link, ✕ deletes.`,
-    mobileText: `☰ opens the Library: ${PRESETS.length} preset songs in different styles that play as soon as you pick one, and everything you SAVE, with share links.`,
-  },
-  {
     target: ".Header-save",
     title: "Save",
-    text: "SAVE names and stores the whole machine: all 12 patterns, their kits, the tempo, every knob and the 808. NEW starts from a blank machine. UPDATE overwrites the pattern you loaded from My patterns with how it sounds now.",
-    mobileText: "SAVE names and stores the whole machine (all 12 patterns, their kits, the tempo and every knob) in the Library.",
+    text: "SAVE names and stores the whole machine in your Library: all 12 patterns, their kits, the tempo, every knob and the 808. NEW starts from a blank machine; UPDATE overwrites the pattern you loaded.",
+    mobileText: "SAVE names and stores the whole machine (all 12 patterns, their kits, the tempo and every knob) in your Library.",
+  },
+  {
+    target: ".Header-burger",
+    title: "Library",
+    text: "☰ opens the Library: preset songs to start from, and everything you save. NEXT opens it for you.",
+  },
+  {
+    panel: "library",
+    target: ".Library-presets",
+    title: "Preset songs",
+    text: `${PRESETS.length} complete songs in different styles, each with a line on what to listen for. Pick one and it plays from the first bar, walking through its pads like a song. Click a pad to loop that section; pick the song again to hear it all.`,
+    mobileText: `${PRESETS.length} complete songs in different styles. Pick one and it plays from the first bar, walking through its pads like a song. Tap a pad to loop that section.`,
+  },
+  {
+    panel: "library",
+    target: ".Library-mine",
+    title: "My patterns",
+    text: "Everything you SAVE lands here, kept in this browser. Click one to load it; ⇪ copies a share link, ✕ deletes it. ☰ again, or a click outside, closes the drawer.",
+    mobileText: "Everything you SAVE lands here, kept in this browser. Tap one to load it; ⇪ copies a share link, ✕ deletes it.",
   },
   {
     target: ".Header-help",
     title: "Guide",
-    text: "? opens the guide: every control on one page, what each pad look means, the 808, the keyboard shortcuts, and this tour again. That's the whole machine: start jamming, or open ☰ and play a preset song.",
-    mobileText: "? opens the guide: every control on one page, what each pad look means, and this tour again. Start jamming, or open ☰ and play a preset song.",
+    text: "? opens the guide: the whole manual on one page, for when you forget what something does. NEXT opens it for you.",
+  },
+  {
+    panel: "help",
+    target: ".Help-start",
+    title: "Start here",
+    text: "If you read one thing, read this: four lines from silence to your first saved beat.",
+  },
+  {
+    panel: "help",
+    target: ".Help-legend",
+    title: "Pad legend",
+    text: "What every pad look means: lit, soft, hard, sliced rolls and 808 notes. Below it, one box per module with the details this tour skipped: 808, rows, knobs, patterns, keys.",
+  },
+  {
+    panel: "help",
+    target: ".Help-head",
+    title: "Any time",
+    text: "TAKE THE TOUR brings this tour back, and ✕ or Esc closes the guide. That's the whole machine: start jamming, or open ☰ and play a preset song.",
   },
 ];
 
 const PAD = 8; // spotlight margin around the module
 const GAP = 12; // spotlight to card
+const EDGE = 16; // card to screen edge
+const OPEN_MS = 260; // the Library drawer slides in over 0.22s
+
+// Spotlights an element inside the Library drawer or the guide, both fixed to
+// the screen, in screen coordinates. The panel scrolls first if the element
+// isn't fully in view; everything is placed where that scroll lands. The card
+// goes beside the element when there's room (the drawer on a wide screen),
+// else below or above it, else over the bottom of a spotlight cut short.
+// Returns a re-place for window resizes.
+const placeInPanel = (el, spot, card, reduce) => {
+  const scroller = el.closest(".Library, .Help-wrap");
+  let rise = 0;
+  const r = el.getBoundingClientRect();
+  const margin = EDGE + PAD;
+  if (scroller && (r.top < margin || r.bottom > window.innerHeight - margin)) {
+    const max = scroller.scrollHeight - scroller.clientHeight;
+    const to = Math.max(0, Math.min(scroller.scrollTop + r.top - margin, max));
+    rise = to - scroller.scrollTop;
+    scroller.scrollTo({ top: to, behavior: reduce ? "auto" : "smooth" });
+  }
+  const place = () => {
+    const vw = document.documentElement.clientWidth;
+    const vh = window.innerHeight;
+    const cw = card.offsetWidth;
+    const ch = card.offsetHeight;
+    const r = el.getBoundingClientRect();
+    const box = {
+      left: r.left - PAD,
+      top: r.top - rise - PAD,
+      width: r.width + PAD * 2,
+      height: r.height + PAD * 2,
+    };
+    // keep the ring on screen: the drawer sits flush with the left edge
+    const right = Math.min(box.left + box.width, vw - 2);
+    box.left = Math.max(2, box.left);
+    box.width = right - box.left;
+    let left = Math.min(Math.max(EDGE, r.left + r.width / 2 - cw / 2), vw - EDGE - cw);
+    let top;
+    if (box.left + box.width + GAP + cw <= vw - EDGE) {
+      left = box.left + box.width + GAP;
+      top = Math.min(Math.max(EDGE, box.top), vh - EDGE - ch);
+    } else if (box.top + box.height + GAP + ch <= vh - EDGE) {
+      top = box.top + box.height + GAP;
+    } else if (box.top - GAP - ch >= EDGE) {
+      top = box.top - GAP - ch;
+    } else {
+      top = vh - EDGE - ch;
+      box.height = Math.max(0, top - GAP - box.top);
+    }
+    spot.style.transform = `translate(${box.left}px, ${box.top}px)`;
+    spot.style.width = `${box.width}px`;
+    spot.style.height = `${box.height}px`;
+    card.style.left = `${left}px`;
+    card.style.top = `${top}px`;
+  };
+  place();
+  return () => {
+    rise = 0; // the scroll has landed by now
+    place();
+  };
+};
 
 // Dims the page except one module, with a card explaining it. Both are
 // absolutely positioned in page coordinates, so scrolling never moves them
 // off their module. Phones pin the card instead: fixed at the spot on screen
 // it first lands on, so it stays in view while the page scrolls under it.
-const Tour = ({ onClose }) => {
+// Panel steps are fixed to the screen instead, like the panels themselves.
+const Tour = ({ onClose, setHelpOpen }) => {
+  const { setDrawerOpen } = useContext(Context);
   const [index, setIndex] = useState(0);
   const [leaving, setLeaving] = useState(false);
   const mobile = useMediaQuery("(max-width:600px)");
@@ -124,16 +219,40 @@ const Tour = ({ onClose }) => {
   const step = STEPS[index];
   const last = index === STEPS.length - 1;
 
+  // Open the step's panel (and close the other). The card waits until the
+  // panel has landed, so it's measured where it ends up.
+  const [opened, setOpened] = useState(null);
+  const waiting = Boolean(step.panel) && opened !== step.panel;
+  useEffect(() => {
+    setDrawerOpen(step.panel === "library");
+    setHelpOpen(step.panel === "help");
+    setOpened(null);
+    if (!step.panel) return;
+    const timer = setTimeout(() => setOpened(step.panel), OPEN_MS);
+    return () => clearTimeout(timer);
+  }, [step.panel, setDrawerOpen, setHelpOpen]);
+
   const close = () => {
     setLeaving(true);
+    setDrawerOpen(false);
+    setHelpOpen(false);
     setTimeout(onClose, 200);
   };
   const next = () => (last ? close() : setIndex(index + 1));
   const back = () => setIndex(Math.max(0, index - 1));
 
   useLayoutEffect(() => {
+    if (waiting) return;
     const spot = spotRef.current;
     const card = cardRef.current;
+    if (step.panel) {
+      const el = document.querySelector(step.target);
+      if (!el) return;
+      const onResize = placeInPanel(el, spot, card, reduce);
+      nextRef.current.focus({ preventScroll: true });
+      window.addEventListener("resize", onResize);
+      return () => window.removeEventListener("resize", onResize);
+    }
     let pinned = null; // phones: the card's fixed { left, top } on screen
     const place = () => {
       const x = window.scrollX;
@@ -204,7 +323,7 @@ const Tour = ({ onClose }) => {
     // leaves the spotlight stale until Next.
     window.addEventListener("resize", place);
     return () => window.removeEventListener("resize", place);
-  }, [index, mobile, reduce, step]);
+  }, [index, mobile, reduce, step, waiting]);
 
   const onKeyDown = (e) => {
     if (e.key === "Escape") close();
@@ -213,43 +332,50 @@ const Tour = ({ onClose }) => {
   };
 
   return (
-    <div className={"Tour" + (leaving ? " is-leaving" : "")} onKeyDown={onKeyDown}>
+    <div
+      className={"Tour" + (step.panel ? " is-panel" : "") + (leaving ? " is-leaving" : "")}
+      onKeyDown={onKeyDown}
+    >
+      {/* over an open panel, a click outside the card would close the panel */}
+      {step.panel && <div className="Tour-shield"></div>}
       <div ref={spotRef} className={"Tour-spot" + (step.target ? "" : " is-empty")}></div>
-      <div
-        key={index}
-        ref={cardRef}
-        className="Tour-card"
-        role="dialog"
-        aria-label={step.title}
-      >
-        <div className="Tour-card__head">
-          <span className="Tour-card__title">{step.title}</span>
-          <span className="Tour-card__count">
-            {index + 1} / {STEPS.length}
-          </span>
-        </div>
-        <p className="Tour-card__text">{(mobile && step.mobileText) || step.text}</p>
-        <div className="Tour-card__buttons">
-          {!last && (
-            <button className="Tour-card__skip" onClick={close}>
-              Skip tour
+      {!waiting && (
+        <div
+          key={index}
+          ref={cardRef}
+          className="Tour-card"
+          role="dialog"
+          aria-label={step.title}
+        >
+          <div className="Tour-card__head">
+            <span className="Tour-card__title">{step.title}</span>
+            <span className="Tour-card__count">
+              {index + 1} / {STEPS.length}
+            </span>
+          </div>
+          <p className="Tour-card__text">{(mobile && step.mobileText) || step.text}</p>
+          <div className="Tour-card__buttons">
+            {!last && (
+              <button className="Tour-card__skip" onClick={close}>
+                Skip tour
+              </button>
+            )}
+            {index > 0 && (
+              <button className="Header-button" onClick={back}>
+                BACK
+              </button>
+            )}
+            <button ref={nextRef} className="Header-button Tour-card__next" onClick={next}>
+              {last ? "START JAMMING" : "NEXT"}
             </button>
-          )}
-          {index > 0 && (
-            <button className="Header-button" onClick={back}>
-              BACK
-            </button>
-          )}
-          <button ref={nextRef} className="Header-button Tour-card__next" onClick={next}>
-            {last ? "START JAMMING" : "NEXT"}
-          </button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
 
-const Intro = ({ phase, setPhase }) => {
+const Intro = ({ phase, setPhase, setHelpOpen }) => {
   const { audioCtx, buffersRef, hydrate, songRef, setStarted, toast } = useContext(Context);
   const reduce = useMediaQuery("(prefers-reduced-motion: reduce)");
 
@@ -288,7 +414,9 @@ const Intro = ({ phase, setPhase }) => {
     setPhase("done");
   };
 
-  if (phase === "tour") return <Tour onClose={() => setPhase("done")} />;
+  if (phase === "tour") {
+    return <Tour onClose={() => setPhase("done")} setHelpOpen={setHelpOpen} />;
+  }
   if (phase !== "off" && phase !== "boot") return null;
 
   return (

@@ -46,7 +46,7 @@ const App = () => {
         <div className="Machine-glow" aria-hidden="true"></div>
       </div>
       <Library />
-      <Intro phase={intro} setPhase={setIntro} />
+      <Intro phase={intro} setPhase={setIntro} setHelpOpen={setHelpOpen} />
       <Help
         open={helpOpen}
         onClose={() => setHelpOpen(false)}

@@ -42,7 +42,7 @@ const Help = ({ open, onClose, onTour }) => {
           </button>
         </div>
 
-        <section className="Help-section">
+        <section className="Help-section Help-start">
           <h3>Start here</h3>
           <ol>
             <li>Open ☰ and pick a preset song: it plays at once and walks through its pads.</li>

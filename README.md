@@ -10,7 +10,8 @@ Audio API. Deployed on Vercel and Railway (API + MySQL).
 
 - Power-on intro: the machine boots, writes a 140 BPM trap demo onto the pads and
   plays it as a song across six patterns (filter sweeps, a build-up, the drop),
-  then a guided tour explains every module, the Library and the guide
+  then a guided tour explains every module, then opens the Library and the guide
+  and points out what's inside each
 - A guide behind the header's `?`: every control, what the pads' looks mean
   (soft, hard, sliced rolls, 808 notes), the 808, and the tour again. Space plays
   and pauses

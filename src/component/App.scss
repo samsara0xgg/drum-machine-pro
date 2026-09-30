@@ -1685,7 +1685,8 @@ li {
 // Spotlight and card sit in page coordinates (absolute, placed from JS) and
 // never block clicks outside the card: the machine stays playable mid-tour.
 // On phones the card is fixed instead (below).
-// Below the Library drawer (9/10) and MUI menus, above the sticky ruler (5).
+// Below the Library drawer (9/10) and MUI menus, above the sticky ruler (5);
+// steps inside the drawer or the guide rise above them (.is-panel, below).
 .Tour-spot {
   position: absolute;
   top: 0;
@@ -1774,6 +1775,22 @@ li {
   .Tour-card {
     position: fixed;
   }
+}
+
+// Steps inside the Library drawer or the guide (Intro.component.jsx): the
+// tour sits over the open panel, fixed to the screen like the panel, and a
+// clear shield stops a stray click from closing the panel mid-step.
+.Tour.is-panel {
+  .Tour-spot,
+  .Tour-card {
+    position: fixed;
+    z-index: 13;
+  }
+}
+.Tour-shield {
+  position: fixed;
+  inset: 0;
+  z-index: 13;
 }
 
 .Tour.is-leaving .Tour-spot,
