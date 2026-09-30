@@ -16,8 +16,9 @@ export const REPO = "https://github.com/samsara0xgg/drum-machine-pro";
 export const MAIL_TAG = "[Drum Machine Pro]";
 
 // The Contact sheet's form sends through Web3Forms, which mails it on, so no
-// visitor needs a mail app. FORM_KEY is the access key Web3Forms mails to
-// AUTHOR.email from web3forms.com; it can only send to that address, so it is
-// safe in the page. Without a key, Contact shows just the address.
+// visitor needs a mail app. FORM_KEY is an access key from web3forms.com;
+// messages go to the inbox it was created for, which may not be AUTHOR.email.
+// It can only send there, so it is safe in the page. Without a key, Contact
+// shows just the address.
 export const FORM_ENDPOINT = "https://api.web3forms.com/submit";
 export const FORM_KEY = "662e9a7c-24e7-4d3e-a31a-cab97463bb51";
