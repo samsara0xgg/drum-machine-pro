@@ -25,6 +25,9 @@ $ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
 
 body {
   background-color: $Surface-00dp;
+  // a faint pool of light on the desk the machine sits on
+  background-image: radial-gradient(ellipse 55% 45% at 50% 42%, rgba(255, 255, 255, 0.035), transparent);
+  background-attachment: fixed;
   font-family: "PT Sans", sans-serif;
   height: 100%;
   margin: 0;
@@ -1180,6 +1183,123 @@ li {
   }
 }
 
+// Under the machine (Footer.component.jsx): the maker's line and the ABOUT,
+// GITHUB and CONTACT links, lined up with the bezel's inner edge and set in
+// its silkscreen type.
+.Footer {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 0 22px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  &-credit {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 12.5px;
+    @include fontdp(0.45);
+    text-decoration: none;
+
+    b {
+      @include fontdp(0.8);
+      transition: color 0.15s ease;
+    }
+    &:hover b {
+      color: $Primary-200;
+    }
+  }
+  &-avatar {
+    flex: none;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background-color: #242424;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1);
+  }
+  &-links {
+    display: flex;
+    gap: 2px;
+  }
+  &-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 10px;
+    border: none;
+    border-radius: 5px;
+    background: none;
+    font-family: inherit;
+    font-size: 10px;
+    font-weight: bold;
+    letter-spacing: 0.14em;
+    @include fontdp(0.5);
+    text-decoration: none;
+    cursor: pointer;
+    transition: color 0.15s ease, background-color 0.15s ease;
+
+    &:hover {
+      color: $Primary-200;
+      background-color: rgba(255, 255, 255, 0.05);
+    }
+  }
+  &-credit,
+  &-link {
+    &:focus-visible {
+      outline: 2px solid $Primary-200;
+      outline-offset: 2px;
+      border-radius: 5px;
+    }
+  }
+}
+
+// The footer's ABOUT sheet (About.component.jsx), on the guide's frame.
+.About {
+  width: min(560px, 100%);
+
+  &-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 0 2px;
+  }
+  &-avatar {
+    flex: none;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background-color: #2a2a2a;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1);
+  }
+  &-name {
+    font-size: 16px;
+    font-weight: bold;
+  }
+  &-bio {
+    margin-top: 3px;
+    font-size: 13px;
+    line-height: 1.45;
+    @include fontdp(0.6);
+  }
+  &-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 14px 0 4px;
+  }
+  &-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    text-decoration: none;
+  }
+  p a {
+    color: $Primary-200;
+  }
+}
+
 // Mobile keeps the transport visible and scrolls only the step matrix.
 @media (max-width: 600px) {
   body {
@@ -1469,6 +1589,19 @@ li {
     margin-left: 0;
   }
 
+  // stacked and centered, with finger-sized links
+  .Footer {
+    flex-direction: column;
+    gap: 0;
+    padding: 6px 0 24px;
+
+    &-credit,
+    &-link {
+      min-height: 44px;
+      padding: 8px 12px;
+    }
+  }
+
   // Keep four pads at a comfortable touch width on narrower iPhones.
   @media (max-width: 380px) {
     .Board-TopBar,
@@ -1496,6 +1629,13 @@ li {
 // Powered off: the machine is a faint silhouette behind the power screen.
 .Machine.is-off {
   opacity: 0.12;
+}
+// The footer is off with the machine and comes on once the grid is up.
+.Machine.is-off + .Footer {
+  visibility: hidden;
+}
+.Machine.is-booting + .Footer {
+  animation: tour-fade 0.4s ease 400ms backwards;
 }
 
 // Boot timeline (ms): body on at 0, sections rise 80-400, screen flickers
@@ -1611,6 +1751,14 @@ li {
     letter-spacing: 0.32em;
     margin-bottom: 10px;
     @include fontdp(0.5);
+  }
+  // the maker's line under the name, the way a unit is badged
+  &__by {
+    display: block;
+    margin-top: 8px;
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    @include fontdp(0.35);
   }
   &__button {
     position: relative;
