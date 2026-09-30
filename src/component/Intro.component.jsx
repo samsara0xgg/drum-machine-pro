@@ -4,6 +4,7 @@ import { Context } from "../Context";
 import { DEMO_SONG, PRESETS } from "../service/presets";
 import { loadSample, sampleDef } from "../service/kits";
 import { ensureAudioReady } from "../service/audio";
+import { AUTHOR } from "../service/site";
 
 // First visit: power screen -> boot animation writes the demo song's intro
 // onto the pads -> the song plays through pads 1-5 -> a tour explains each module.
@@ -421,7 +422,10 @@ const Intro = ({ phase, setPhase, setHelpOpen }) => {
 
   return (
     <div className={"Power" + (phase === "boot" ? " is-leaving" : "")}>
-      <div className="Power__brand">DRUM MACHINE PRO</div>
+      <div className="Power__brand">
+        DRUM MACHINE PRO
+        <span className="Power__by">by {AUTHOR.name}</span>
+      </div>
       <button className="Power__button" onClick={powerOn} autoFocus aria-label="Power on">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
           <path d="M12 3v8" />
