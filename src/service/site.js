@@ -15,7 +15,10 @@ export const REPO = "https://github.com/samsara0xgg/drum-machine-pro";
 // Mail from the site arrives tagged, so it can be filtered on the subject.
 export const MAIL_TAG = "[Drum Machine Pro]";
 
-// The Contact sheet's form posts here and FormSubmit mails it on, so no
-// visitor needs a mail app. The first message sends an "Activate Form" mail
-// to the address; nothing arrives until that link is clicked once.
+// The Contact sheet's form posts to FormSubmit, which mails it on, so no
+// visitor needs a mail app: in the background to the ajax endpoint, or, if
+// the browser can't reach that, as a plain form post in a new tab. The
+// first message sends an "Activate Form" mail to the address; nothing
+// arrives until that link is clicked once.
 export const FORM_ENDPOINT = `https://formsubmit.co/ajax/${AUTHOR.email}`;
+export const FORM_ACTION = `https://formsubmit.co/${AUTHOR.email}`;
