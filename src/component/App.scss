@@ -1300,6 +1300,57 @@ li {
   }
 }
 
+// The footer's CONTACT sheet (Contact.component.jsx): the address to copy,
+// and Gmail or the mail app to write from.
+.Contact {
+  width: min(460px, 100%);
+
+  &-lead {
+    margin: 8px 0 12px;
+    font-size: 13px;
+    line-height: 1.5;
+    @include fontdp(0.6);
+  }
+  &-address {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 6px 6px 14px;
+    border-radius: 8px;
+    background-color: #151515;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.07);
+  }
+  &-email {
+    flex: 1;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    font-family: $Mono;
+    font-size: 14px;
+    color: $Primary-200;
+    user-select: all;
+  }
+  &-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 12px 0 4px;
+  }
+  &-link {
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
+  }
+  &-note {
+    margin: 10px 0 0;
+    font-size: 12.5px;
+    @include fontdp(0.5);
+
+    a {
+      color: $Primary-200;
+    }
+  }
+}
+
 // Mobile keeps the transport visible and scrolls only the step matrix.
 @media (max-width: 600px) {
   body {

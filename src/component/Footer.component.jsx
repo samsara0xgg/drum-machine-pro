@@ -1,5 +1,5 @@
 import React from "react";
-import { AUTHOR, CONTACT, REPO } from "../service/site";
+import { AUTHOR, REPO } from "../service/site";
 
 // Octicons' mark-github
 export const GitHubMark = () => (
@@ -8,13 +8,12 @@ export const GitHubMark = () => (
   </svg>
 );
 
-// Links that leave the page open in a new tab; a mail link opens in place.
+// Links that leave the page open in a new tab.
 export const external = { target: "_blank", rel: "noopener noreferrer" };
-export const contactLink = AUTHOR.email ? {} : external;
 
 // Under the machine, like the maker's line printed on the desk it sits on:
 // who built it, and where to read more, see the code, or get in touch.
-const Footer = ({ onAbout }) => (
+const Footer = ({ onAbout, onContact }) => (
   <footer className="Footer">
     <a
       className="Footer-credit"
@@ -35,14 +34,9 @@ const Footer = ({ onAbout }) => (
         <GitHubMark />
         GITHUB
       </a>
-      <a
-        className="Footer-link"
-        href={CONTACT}
-        title={AUTHOR.email ? `Email ${AUTHOR.name}` : "Report a bug or send feedback on GitHub"}
-        {...contactLink}
-      >
+      <button className="Footer-link" onClick={onContact}>
         CONTACT
-      </a>
+      </button>
     </nav>
   </footer>
 );
