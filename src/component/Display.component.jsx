@@ -104,6 +104,27 @@ const Display = () => {
     }
   };
 
+  // Space plays and pauses, like a DAW. Typing, menus, dialogs and the power
+  // screen keep their own Space; on a focused button (a pad just clicked) it
+  // no longer clicks that button, and the page no longer scrolls.
+  const spaceRef = useRef(null);
+  spaceRef.current = () => !starting && togglePlayback();
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.code !== "Space" || e.ctrlKey || e.metaKey || e.altKey) return;
+      if (document.querySelector(".Power")) return;
+      if (e.target.closest?.("input, select, textarea, [role=dialog], [role=menu], [role=listbox]")) return;
+      e.preventDefault();
+      if (e.type === "keydown" && !e.repeat) spaceRef.current();
+    };
+    window.addEventListener("keydown", onKey);
+    window.addEventListener("keyup", onKey);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("keyup", onKey);
+    };
+  }, []);
+
   // Part 1 lights up on any param change, then fades fully dark 1.2s later.
   const [paramLive, setParamLive] = useState(false);
   useEffect(() => {
@@ -290,7 +311,7 @@ const Display = () => {
           className={"Screen-play" + (started ? " is-playing" : "")}
           onClick={togglePlayback}
           disabled={starting}
-          title={starting ? "Loading sounds" : started ? "Pause" : "Play"}
+          title={starting ? "Loading sounds" : started ? "Pause (Space)" : "Play (Space)"}
           aria-label={starting ? "Loading sounds" : started ? "Pause" : "Play"}
         >
           <span className="Screen-play__tri"></span>

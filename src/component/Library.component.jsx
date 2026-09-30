@@ -105,53 +105,61 @@ const Library = () => {
       ></div>
       <aside className={"Library" + (drawerOpen ? " is-open" : "")}>
         <h2 className="Library-title">LIBRARY</h2>
-        <div className="Library-group">Presets</div>
-        {PRESETS.map((preset) => (
-          <div
-            key={preset.name}
-            className="Library-entry"
-            onClick={() => loadPreset(preset)}
-          >
-            <span className="Library-entry__name">{preset.name}</span>
-            <span className="Library-entry__meta">{preset.meta}</span>
+        <section className="Library-presets">
+          <div className="Library-group">Preset songs</div>
+          <div className="Library-note">
+            Each one plays through its pads like a song. Tap a pad to loop that section.
           </div>
-        ))}
-        <div className="Library-group">My Patterns</div>
-        {library.length === 0 && (
-          <div className="Library-empty">No saved patterns yet — hit SAVE to add one</div>
-        )}
-        {library.map((entry) => (
-          <div
-            key={entry.id}
-            className={
-              "Library-entry" + (entry.id === loadedId ? " is-active" : "")
-            }
-            onClick={() => loadEntry(entry.id)}
-          >
-            <span className="Library-entry__name">{entry.name}</span>
-            <span className="Library-entry__meta">{entryMeta(entry)}</span>
-            <button
-              className="Library-entry__action"
-              title="Copy share link"
-              onClick={(e) => {
-                e.stopPropagation();
-                shareEntry(entry);
-              }}
+          {PRESETS.map((preset) => (
+            <div
+              key={preset.name}
+              className="Library-entry Library-entry--preset"
+              onClick={() => loadPreset(preset)}
             >
-              ⇪
-            </button>
-            <button
-              className="Library-entry__action"
-              title="Delete"
-              onClick={(e) => {
-                e.stopPropagation();
-                deleteEntry(entry.id);
-              }}
+              <span className="Library-entry__name">{preset.name}</span>
+              <span className="Library-entry__meta">{preset.meta}</span>
+              <span className="Library-entry__about">{preset.about}</span>
+            </div>
+          ))}
+        </section>
+        <section className="Library-mine">
+          <div className="Library-group">My Patterns</div>
+          {library.length === 0 && (
+            <div className="Library-empty">No saved patterns yet — hit SAVE to add one</div>
+          )}
+          {library.map((entry) => (
+            <div
+              key={entry.id}
+              className={
+                "Library-entry" + (entry.id === loadedId ? " is-active" : "")
+              }
+              onClick={() => loadEntry(entry.id)}
             >
-              ✕
-            </button>
-          </div>
-        ))}
+              <span className="Library-entry__name">{entry.name}</span>
+              <span className="Library-entry__meta">{entryMeta(entry)}</span>
+              <button
+                className="Library-entry__action"
+                title="Copy share link"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  shareEntry(entry);
+                }}
+              >
+                ⇪
+              </button>
+              <button
+                className="Library-entry__action"
+                title="Delete"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  deleteEntry(entry.id);
+                }}
+              >
+                ✕
+              </button>
+            </div>
+          ))}
+        </section>
       </aside>
       <SaveDialog />
       <Toast />

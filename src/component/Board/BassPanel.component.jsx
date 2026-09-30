@@ -85,6 +85,10 @@ const BassPanel = ({ note, setNote, slide, setSlide }) => {
           <Knob key={knob.name} {...knob} />
         ))}
       </div>
+      <p className="Bass808__hint">
+        Pick a note, then paint pads on the 808 Bass row. Remove that row (✕) to take the
+        bass out.
+      </p>
     </div>
   );
 };
