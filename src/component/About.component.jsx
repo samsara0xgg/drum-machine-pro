@@ -1,10 +1,10 @@
 import React, { useEffect, useRef } from "react";
-import { AUTHOR, CONTACT, REPO } from "../service/site";
-import { GitHubMark, contactLink, external } from "./Footer.component";
+import { AUTHOR, REPO } from "../service/site";
+import { GitHubMark, external } from "./Footer.component";
 
 // The footer's ABOUT: who made the machine, what it is, and how to reach
 // them. A sheet drawn like the "?" guide.
-const About = ({ open, onClose }) => {
+const About = ({ open, onClose, onContact }) => {
   const closeRef = useRef(null);
 
   useEffect(() => {
@@ -47,9 +47,9 @@ const About = ({ open, onClose }) => {
           <a className="Header-button About-link" href={REPO} {...external}>
             SOURCE CODE
           </a>
-          <a className="Header-button About-link" href={CONTACT} {...contactLink}>
+          <button className="Header-button About-link" onClick={onContact}>
             CONTACT
-          </a>
+          </button>
         </div>
 
         <section className="Help-section">
@@ -74,14 +74,8 @@ const About = ({ open, onClose }) => {
         <section className="Help-section">
           <h3>Feedback</h3>
           <p>
-            Found a bug, or have an idea for the machine?{" "}
-            {AUTHOR.email ? (
-              <>
-                Email <a href={CONTACT}>{AUTHOR.email}</a>, or open an issue on{" "}
-              </>
-            ) : (
-              "Open an issue on "
-            )}
+            Found a bug, or have an idea for the machine? Write through CONTACT above, or
+            open an issue on{" "}
             <a href={`${REPO}/issues`} {...external}>
               GitHub
             </a>

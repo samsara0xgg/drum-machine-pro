@@ -10,6 +10,7 @@ import Intro, { firstPhase } from "./Intro.component";
 import Help from "./Help.component";
 import Footer from "./Footer.component";
 import About from "./About.component";
+import Contact from "./Contact.component";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 
 // MUI theme still drives the dark menus, select and snackbar
@@ -33,6 +34,7 @@ const App = () => {
   const [intro, setIntro] = useState(firstPhase);
   const [helpOpen, setHelpOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
+  const [contactOpen, setContactOpen] = useState(false);
   const machineState = { off: " is-off", boot: " is-booting" }[intro] || "";
 
   return (
@@ -48,7 +50,7 @@ const App = () => {
         <Board />
         <div className="Machine-glow" aria-hidden="true"></div>
       </div>
-      <Footer onAbout={() => setAboutOpen(true)} />
+      <Footer onAbout={() => setAboutOpen(true)} onContact={() => setContactOpen(true)} />
       <Library />
       <Intro phase={intro} setPhase={setIntro} setHelpOpen={setHelpOpen} />
       <Help
@@ -59,7 +61,15 @@ const App = () => {
           setIntro("tour");
         }}
       />
-      <About open={aboutOpen} onClose={() => setAboutOpen(false)} />
+      <About
+        open={aboutOpen}
+        onClose={() => setAboutOpen(false)}
+        onContact={() => {
+          setAboutOpen(false);
+          setContactOpen(true);
+        }}
+      />
+      <Contact open={contactOpen} onClose={() => setContactOpen(false)} />
     </ThemeProvider>
   );
 };
