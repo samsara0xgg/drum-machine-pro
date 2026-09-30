@@ -7,12 +7,15 @@ export const AUTHOR = {
   github: "https://github.com/samsara0xgg",
   // a copy of the GitHub avatar, so the page makes no third-party request
   avatar: "/assets/avatar.jpg",
-  // Set an address to make CONTACT a mail link instead of a GitHub issue.
-  email: "",
+  // CONTACT mails this; without one it opens a GitHub issue instead.
+  email: "alllllenshi@gmail.com",
 };
 
 export const REPO = "https://github.com/samsara0xgg/drum-machine-pro";
 
+// Mail from the site arrives tagged, so it can be filtered on the subject.
+export const MAIL_TAG = "[Drum Machine Pro]";
+
 export const CONTACT = AUTHOR.email
-  ? `mailto:${AUTHOR.email}`
+  ? `mailto:${AUTHOR.email}?subject=${encodeURIComponent(`${MAIL_TAG} `)}`
   : `${REPO}/issues/new`;
